@@ -3,135 +3,110 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using System;
 
-namespace Celeste.Mod.EmHelper.Entities
-{
+namespace Celeste.Mod.EmHelper.Entities {
     [Tracked]
     [CustomEntity("EmHelper/Monumentflipswitch")]
-    public class Monumentflipswitch : Entity
-    {
-        public Monumentflipswitch(Vector2 position, bool onlyEnable, bool onlyDisable, Color color, bool mute, int pattern) : base(position)
-        {
+    public class MonumentFlipSwitch : Entity {
+        public MonumentFlipSwitch(Vector2 position, bool onlyEnable, bool onlyDisable, Color color, bool mute, int pattern)
+            : base(position) {
             this.pattern = pattern;
             this.mute = mute;
-            this.Index = color;
-            this.Enable = false;
+            Index = color;
+            Enable = false;
             this.onlyEnable = onlyEnable;
             this.onlyDisable = onlyDisable;
-            base.Collider = new Hitbox(16f, 24f, -8f, -12f);
-            base.Add(new PlayerCollider(new Action<Player>(this.OnPlayer), null, null));
-            base.Add(new HoldableCollider(new Action<Holdable>(this.OnHoldable), null));
+            Collider = new Hitbox(16f, 24f, -8f, -12f);
+            Add(new PlayerCollider(new Action<Player>(OnPlayer), null, null));
+            Add(new HoldableCollider(new Action<Holdable>(OnHoldable), null));
             string spritepath = "monumentflipswitch" + this.pattern.ToString();
-            base.Add(this.sprite = GFX.SpriteBank.Create(spritepath));
-            base.Depth = 2000;
+            Add(sprite = GFX.SpriteBank.Create(spritepath));
+            Depth = 2000;
 
-            this.monumentactivator = new MonumentActivator();
-            base.Add(this.monumentactivator);
+            monumentActivator = new MonumentActivator();
+            Add(monumentActivator);
         }
 
-        public Monumentflipswitch(EntityData data, Vector2 offset) : this(data.Position + offset, data.Bool("onlyEnable", false), data.Bool("onlyDisable", false), data.HexColor("color", Calc.HexToColor("82d9ff")), data.Bool("mute", false), data.Int("pattern", 0))
-        {
+        public MonumentFlipSwitch(EntityData data, Vector2 offset)
+            : this(data.Position + offset, data.Bool("onlyEnable", false), data.Bool("onlyDisable", false), data.HexColor("color", Calc.HexToColor("82d9ff")), data.Bool("mute", false), data.Int("pattern", 0)) {
         }
 
-        public override void Added(Scene scene)
-        {
+        public override void Added(Scene scene) {
             base.Added(scene);
-            this.sprite.Color = Index;
-            this.SetSprite(false);
+            sprite.Color = Index;
+            SetSprite(false);
         }
 
-        public void SetSprite(bool animate)
-        {
-            if (animate)
-            {
-                if (this.playSounds && !this.mute)
-                {
-                    Audio.Play(this.Enable ? "event:/game/09_core/switch_to_cold" : "event:/game/09_core/switch_to_hot", this.Position);
+        public void SetSprite(bool animate) {
+            if (animate) {
+                if (playSounds && !mute) {
+                    Audio.Play(Enable ? "event:/game/09_core/switch_to_cold" : "event:/game/09_core/switch_to_hot", Position);
                 }
-                if (this.Usable)
-                {
-                    this.sprite.Play(this.Enable ? "ice" : "hot", false, false);
-                }
-                else
-                {
-                    if (this.playSounds && !this.mute)
-                    {
-                        Audio.Play("event:/game/09_core/switch_dies", this.Position);
+
+                if (Usable) {
+                    sprite.Play(Enable ? "ice" : "hot", false, false);
+                } else {
+                    if (playSounds && !mute) {
+                        Audio.Play("event:/game/09_core/switch_dies", Position);
                     }
-                    this.sprite.Play(this.Enable ? "iceOff" : "hotOff", false, false);
+
+                    sprite.Play(Enable ? "iceOff" : "hotOff", false, false);
                 }
+            } else if (Usable) {
+                sprite.Play(Enable ? "iceLoop" : "hotLoop", false, false);
+            } else {
+                sprite.Play(Enable ? "iceOffLoop" : "hotOffLoop", false, false);
             }
-            else if (this.Usable)
-            {
-                this.sprite.Play(this.Enable ? "iceLoop" : "hotLoop", false, false);
-            }
-            else
-            {
-                this.sprite.Play(this.Enable ? "iceOffLoop" : "hotOffLoop", false, false);
-            }
-            this.playSounds = false;
+
+            playSounds = false;
         }
 
-        private void OnPlayer(Player player) //copied the vanilla one... sigh
+        private void OnPlayer(Player player)
         {
-            if (this.Usable && this.cooldownTimer <= 0f)
-            {
-                this.playSounds = true;
-                this.monumentactivator.Activated(this.Index);
+            if (Usable && cooldownTimer <= 0f) {
+                playSounds = true;
+                monumentActivator.Activated(Index);
                 Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
-                this.cooldownTimer = 1f;
+                cooldownTimer = 1f;
             }
         }
-        private void OnHoldable(Holdable holdable)
-        {
-            if (this.Usable && this.cooldownTimer <= 0f)
-            {
-                this.playSounds = true;
-                this.monumentactivator.Activated(this.Index);
+
+        private void OnHoldable(Holdable holdable) {
+            if (Usable && cooldownTimer <= 0f) {
+                playSounds = true;
+                monumentActivator.Activated(Index);
                 Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
-                this.cooldownTimer = 1f;
+                cooldownTimer = 1f;
             }
         }
-        
-        public override void Update()
-        {
+
+        public override void Update() {
             base.Update();
-            if (this.cooldownTimer > 0f)
-            {
-                this.cooldownTimer -= Engine.DeltaTime;
+            if (cooldownTimer > 0f) {
+                cooldownTimer -= Engine.DeltaTime;
             }
         }
 
-        private bool Usable
-        {
-            get
-            {
-                return (!this.onlyEnable || this.Enable) && (!this.onlyDisable || !this.Enable);
-            }
-        }
-
-        private const float Cooldown = 1f;
+        private bool Usable => (!onlyEnable || Enable) && (!onlyDisable || !Enable);
 
 
         private float cooldownTimer;
 
-        private bool mute; //stfu
+        private readonly bool mute;
 
-        private bool onlyEnable; //only one way
+        private readonly bool onlyEnable;
 
-
-        private bool onlyDisable; //only other way
-
+        private readonly bool onlyDisable;
 
         private bool playSounds;
 
-        public Color Index; //the color
+        public Color Index;
 
-        public bool Enable;  //icemode, it can also activate on disable
+        public bool Enable;
 
-        private Sprite sprite;
+        private readonly Sprite sprite;
 
-        private int pattern; //only ahestetic wise
+        private readonly int pattern;
 
-        private MonumentActivator monumentactivator;
+        private readonly MonumentActivator monumentActivator;
     }
 }

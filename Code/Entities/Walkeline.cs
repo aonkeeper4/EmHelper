@@ -1,452 +1,379 @@
 ﻿using Celeste.Mod.Entities;
+using Celeste.Mod.PandorasBox;
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
 using System.Linq;
-using Celeste.Mod.PandorasBox;
 
-
-namespace Celeste.Mod.EmHelper.Entities
-{
+namespace Celeste.Mod.EmHelper.Entities {
     [Tracked]
     [CustomEntity("EmHelper/Walkeline")]
-    public class Walkeline : Actor
-    {
-        public Walkeline(EntityData data, Vector2 levelOffset) : this(data.Position + levelOffset, data.HexColor("haircolor", Calc.HexToColor("212121")), data.Bool("left", false), data.Bool("weak", false), data.Bool("dangerous", false), data.Bool("ally", false), data.Bool("bouncy", false), data.Bool("smart", false), data.Bool("mute", false), data.Bool("nobackpack", false), data.Bool("idle", false), data.Attr("deathflag", "WalkelineIsDead"), data.Bool("triggerhappy", false)) { } //use the other one
-        public Walkeline(Vector2 position, Color haircolor, bool left, bool weak, bool dangerous, bool ally, bool bouncy, bool smart, bool mute, bool nobackpack, bool idle, string deathflag, bool triggerhappy) : base(position)
-        {//left: it faces left on start, fragile: it dies if it touches the player, dangerous: kills the player if touched, ally: the player dies if it dies, smart: turns left and right like a red koopa (avoids falling, triggerhappy: interacts with triggers
-            this.triggerhappy = triggerhappy;
-            this.HairColor = haircolor;
+    public class Walkeline : Actor {
+        //use the other one
+        public Walkeline(EntityData data, Vector2 levelOffset)
+            : this(data.Position + levelOffset, data.HexColor("haircolor", Calc.HexToColor("212121")), data.Bool("left", false), data.Bool("weak", false), data.Bool("dangerous", false), data.Bool("ally", false), data.Bool("bouncy", false), data.Bool("smart", false), data.Bool("mute", false), data.Bool("nobackpack", false), data.Bool("idle", false), data.Attr("deathflag", "WalkelineIsDead"), data.Bool("triggerhappy", false)) {
+        }
+
+        //left: it faces left on start, fragile: it dies if it touches the player, dangerous: kills the player if touched, ally: the player dies if it dies, smart: turns left and right like a red koopa (avoids falling, triggerhappy: interacts with triggers
+        public Walkeline(Vector2 position, Color haircolor, bool left, bool weak, bool dangerous, bool ally, bool bouncy, bool smart, bool mute, bool nobackpack, bool idle, string deathflag, bool triggerhappy)
+            : base(position) {
+            this.TriggerHappy = triggerhappy;
+            hairColor = haircolor;
             this.deathflag = deathflag;
             this.idle = idle;
-            this.ismute = mute;
+            isMute = mute;
             this.bouncy = bouncy;
             this.left = left; //if true faces left
             this.ally = ally;
             this.dangerous = dangerous;
             this.weak = weak;
             this.smart = smart;
-            this.nobackpack = nobackpack;
-            base.Collider = new Hitbox(8f, 11f, -4f, -11f); //damage hitbox
-            base.Add(new PlayerCollider(new Action<Player>(this.OnPlayer), null, null));
-            this.onCollideH = new Collision(this.OnCollideH);
-            this.onCollideV = new Collision(this.OnCollideV);
-            base.Add(new VertexLight(base.Collider.Center, Color.White, 1f, 32, 64));
+            this.noBackpack = nobackpack;
+            Collider = new Hitbox(8f, 11f, -4f, -11f); //damage hitbox
+            Add(new PlayerCollider(new Action<Player>(OnPlayer), null, null));
+            onCollideH = new Collision(OnCollideH);
+            onCollideV = new Collision(OnCollideV);
+            Add(new VertexLight(Collider.Center, Color.White, 1f, 32, 64));
+
             //holdable shenanigans to interact with other entities
-            base.Add(this.Hold = new Holdable(0.1f));
-            this.Hold.PickupCollider = new NoCollider();
-            this.Hold.OnHitSeeker = new Action<Seeker>(this.HitSeeker);
-            this.Hold.OnHitSpring = new Func<Spring, bool>(this.HitSpring);
+            Add(holdable = new Holdable(0.1f));
+            holdable.PickupCollider = new Hitbox(0f, 0f); // Dummy hitbox to allow for holdable interactions without being picked up
+            holdable.OnHitSeeker = new Action<Seeker>(HitSeeker);
+            holdable.OnHitSpring = new Func<Spring, bool>(HitSpring);
+
             //pandorabox crossover, the pandora's box interactions only work if it's installed
-            this.pandyinstalled = Everest.Modules.Any((EverestModule mod) => mod.GetType().Name.Equals("PandorasBoxMod"));
-            if (this.pandyinstalled)
-            {
-                createpipeinteraction();
+            pandyInstalled = Everest.Modules.Any((EverestModule mod) => mod.GetType().Name.Equals("PandorasBoxMod"));
+            if (pandyInstalled) {
+                CreatePipeInteraction();
             }
-            this.inpipe = false;
-
-
         }
 
-        private void createpipeinteraction() //all this pipe stuff only happens if pandora's box is installed
-        {
-            MarioClearPipeInteraction interaction = new MarioClearPipeInteraction(new Vector2(0, 8f));
-            interaction.OnPipeEnter = OnPipeEnter;
-            interaction.OnPipeExit = OnPipeExit;
-            interaction.OnPipeBlocked = OnPipeBlocked;
-            interaction.OnPipeUpdate = OnPipeUpdate;
-            interaction.CanEnterPipe = CanEnterPipe;
-            this.Add(interaction);
-
+        private void CreatePipeInteraction() {
+            MarioClearPipeInteraction interaction = new(new Vector2(0, 8f)) {
+                OnPipeEnter = OnPipeEnter,
+                OnPipeExit = OnPipeExit,
+                OnPipeBlocked = OnPipeBlocked,
+                OnPipeUpdate = OnPipeUpdate,
+                CanEnterPipe = CanEnterPipe
+            };
+            Add(interaction);
         }
 
-        private bool CanEnterPipe(Entity entity, MarioClearPipeHelper.Direction direction)
-        {
-            if (entity != this) { return false; }
-            if (this.OnGround(1)) { return true; }
-
-            return false;
-
+        private bool CanEnterPipe(Entity entity, MarioClearPipeHelper.Direction direction) {
+            return OnGround(1);
         }
 
-        private void OnPipeBlocked(Entity entity, MarioClearPipeInteraction interaction)
-        {
-            if (entity != this) { return; }
-            this.Die();
+        private void OnPipeBlocked(Entity entity, MarioClearPipeInteraction interaction) {
+            Die();
         }
 
-        private void OnPipeUpdate(Entity entity, MarioClearPipeInteraction interaction)
-        {
-            if (entity != this) { return; }
-            if (this.dead) { interaction.ExitEarly = true; }
-
-        }
-
-        private void OnPipeEnter(Entity entity, MarioClearPipeInteraction interaction)
-        {
-            if (entity != this) { return; }
-            this.inpipe = true;
-        }
-
-        private void OnPipeExit(Entity entity, MarioClearPipeInteraction interaction)
-        {
-            if (entity != this) { return; }
-            this.inpipe = false;
-
-            this.speed = interaction.DirectionVector * interaction.CurrentClearPipe.TransportSpeed;
-            if (this.speed.X > 0)
-            {
-                this.walker.Sprite.Scale.X = 1;
+        private void OnPipeUpdate(Entity entity, MarioClearPipeInteraction interaction) {
+            if (dead) {
+                interaction.ExitEarly = true;
             }
-            else { this.walker.Sprite.Scale.X = -1; }
-
-
         }
 
+        private void OnPipeEnter(Entity entity, MarioClearPipeInteraction interaction) {
+            inPipe = true;
+        }
 
+        private void OnPipeExit(Entity entity, MarioClearPipeInteraction interaction) {
+            inPipe = false;
+            speed = interaction.DirectionVector * interaction.CurrentClearPipe.TransportSpeed;
+            walker.Sprite.Scale.X = speed.X > 0 ? 1 : -1;
+        }
 
-        //added to scene
-        public override void Added(Scene scene)
-        {
-            base.Added(scene); 
-            this.walker = new BadelineDummy(Position); //add the sprite to this position at the start of the scene
-            this.walker.Floatness = 0f; //it shouldn't float?
-            if (this.nobackpack) //different sprites
-            {
-                GFX.SpriteBank.CreateOn(this.walker.Sprite, "windupwalkeline");
-                this.walker.Add(this.spinninghairsprite = GFX.SpriteBank.Create("windupwspinninghair"));
+        public override void Added(Scene scene) {
+            base.Added(scene);
+            walker = new BadelineDummy(Position) {
+                Floatness = 0f //it shouldn't float?
+            };
+            if (noBackpack) {
+                GFX.SpriteBank.CreateOn(walker.Sprite, "windupwalkeline");
+                walker.Add(spinningHairSprite = GFX.SpriteBank.Create("windupwspinninghair"));
+            } else {
+                GFX.SpriteBank.CreateOn(walker.Sprite, "walkeline");
+                walker.Add(spinningHairSprite = GFX.SpriteBank.Create("wspinninghair"));
             }
-            else
-            {
-                GFX.SpriteBank.CreateOn(this.walker.Sprite, "walkeline");
-                this.walker.Add(this.spinninghairsprite = GFX.SpriteBank.Create("wspinninghair"));
-            }
+
             Scene.Add(walker);
-            if (left) { this.walker.Sprite.Scale.X = -1; } else { this.walker.Sprite.Scale.X = 1; }
-            this.walker.Sprite.Play("walk"); //walking on the moon
-            this.spinninghairsprite.Play("idle"); //only used for pipe shenanigans
-            this.walker.Hair.Color = this.HairColor;//haircolor
-            this.spinninghairsprite.Color = this.HairColor;
+            walker.Sprite.Scale.X = left ? -1 : 1;
+            walker.Sprite.Play("walk");
+            spinningHairSprite.Play("idle"); //only used for pipe shenanigans
+            walker.Hair.Color = hairColor;
+            spinningHairSprite.Color = hairColor;
 
             //audio
-            this.walker.Sprite.OnFrameChange = delegate (string anim)
-            {
-                int currentAnimationFrame = this.walker.Sprite.CurrentAnimationFrame;
-                if ((anim == "walk" && (currentAnimationFrame == 0 || currentAnimationFrame == 6)) || (anim == "runSlow" && (currentAnimationFrame == 0 || currentAnimationFrame == 6)) || (anim == "runFast" && (currentAnimationFrame == 0 || currentAnimationFrame == 6)))
-                {
-                    if (!this.ismute)
-                    {
-                        Audio.Play("event:/char/badeline/footstep", this.walker.Position);
+            walker.Sprite.OnFrameChange = delegate (string anim) {
+                int currentAnimationFrame = walker.Sprite.CurrentAnimationFrame;
+                if ((anim == "walk" && (currentAnimationFrame == 0 || currentAnimationFrame == 6)) || (anim == "runSlow" && (currentAnimationFrame == 0 || currentAnimationFrame == 6)) || (anim == "runFast" && (currentAnimationFrame == 0 || currentAnimationFrame == 6))) {
+                    if (!isMute) {
+                        Audio.Play("event:/char/badeline/footstep", walker.Position);
                     }
-
                 }
             };
         }
 
-
-        //collide with player
-        private void OnPlayer(Player player)
-        { //used when it's touching the player
-            if (!this.dead && !this.inpipe)
-            {
-                if (this.bouncy)
-                {
-                    player.PointBounce(base.Center); //bounce
-                    if (this.bounceSfxDelay <= 0f)
-                    {
-                        if (!this.ismute)
-                        {
-                            Audio.Play("event:/game/general/crystalheart_bounce", this.walker.Position);
+        private void OnPlayer(Player player) {
+            if (!dead && !inPipe) {
+                if (bouncy) {
+                    player.PointBounce(Center);
+                    if (bounceSfxDelay <= 0f) {
+                        if (!isMute) {
+                            Audio.Play("event:/game/general/crystalheart_bounce", walker.Position);
                         }
-                        this.bounceSfxDelay = 0.1f;
+
+                        bounceSfxDelay = 0.1f;
                     }
+
                     Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
                 }
 
-                if (this.dangerous) { player.Die((player.Position - this.Position).SafeNormalize(), false, true); } //if you want to kill the player
-                else if (this.weak) { Die(); }
+                if (dangerous) {
+                    player.Die((player.Position - Position).SafeNormalize(), false, true);
+                }
+                else if (weak) {
+                    Die();
+                }
             }
         }
 
-        public void HitSeeker(Seeker seeker) // :-(
-        {
-            this.Die();
+        public void HitSeeker(Seeker seeker) {
+            Die();
         }
 
-        public bool HitSpring(Spring spring)
-        {
-            if (spring.Orientation == Spring.Orientations.Floor && this.speed.Y >= 0f)
-            {
-                base.MoveTowardsX(spring.CenterX, 4f, null);
-                this.speed.Y = -160f;
-                this.noGravityTimer = 0.15f;
+        public bool HitSpring(Spring spring) {
+            if (spring.Orientation == Spring.Orientations.Floor && speed.Y >= 0f) {
+                MoveTowardsX(spring.CenterX, 4f, null);
+                speed.Y = -160f;
+                noGravityTimer = 0.15f;
                 return true;
             }
-            if (spring.Orientation == Spring.Orientations.WallLeft && this.speed.X <= 0f)
-            {
-                base.MoveTowardsY(spring.CenterY + 5f, 4f, null);
-                this.speed.X = 220f;
-                this.speed.Y = -80f;
-                this.noGravityTimer = 0.1f;
-                this.walker.Sprite.Scale.X = 1;
+
+            if (spring.Orientation == Spring.Orientations.WallLeft && speed.X <= 0f) {
+                MoveTowardsY(spring.CenterY + 5f, 4f, null);
+                speed.X = 220f;
+                speed.Y = -80f;
+                noGravityTimer = 0.1f;
+                walker.Sprite.Scale.X = 1;
                 return true;
             }
-            if (spring.Orientation == Spring.Orientations.WallRight && this.speed.X >= 0f)
-            {
-                base.MoveTowardsY(spring.CenterY + 5f, 4f, null);
-                this.speed.X = -220f;
-                this.speed.Y = -80f;
-                this.noGravityTimer = 0.1f;
-                this.walker.Sprite.Scale.X = -1;
+
+            if (spring.Orientation == Spring.Orientations.WallRight && speed.X >= 0f) {
+                MoveTowardsY(spring.CenterY + 5f, 4f, null);
+                speed.X = -220f;
+                speed.Y = -80f;
+                noGravityTimer = 0.1f;
+                walker.Sprite.Scale.X = -1;
                 return true;
             }
 
             return false;
         }
-        //crushed
-        protected override void OnSquish(CollisionData data)
-        {
-            if (!base.TrySquishWiggle(data) && !SaveData.Instance.Assists.Invincible && !this.dead)
-            {
-                this.Die();
+
+        protected override void OnSquish(CollisionData data) {
+            if (!TrySquishWiggle(data) && !SaveData.Instance.Assists.Invincible && !dead) {
+                Die();
             }
         }
 
-        //rip
-        public void Die()
-        {
-            if (!this.dead)
-            {
-                if (this.ally)
-                {   //kills the player
-                    Player entity = base.SceneAs<Level>().Tracker.GetEntity<Player>();
-                    if (entity != null)
-                    {
+        public void Die() {
+            if (!dead) {
+                if (ally) {
+                    Player entity = SceneAs<Level>().Tracker.GetEntity<Player>();
+                    if (entity != null) {
                         entity.Die(-Vector2.UnitX * (float)entity.Facing, false, true);
                     }
                 }
 
-                Audio.Play("event:/char/madeline/death", this.Position);
-                (base.Scene as Level).Session.SetFlag(deathflag, true);
-                base.Add(new DeathEffect(this.HairColor, new Vector2?(base.Center - this.Position)));
-                this.walker.RemoveSelf();
-                this.Hold.RemoveSelf();
-                this.dead = true; //the death effect doesnt appear if i delete the entity, so it just becomes invisible and deactivates
-                base.Depth = -1000000;
-                base.Collider = new NoCollider();
-                this.AllowPushing = false;
-                this.triggerhappy = false;
+                Audio.Play("event:/char/madeline/death", Position);
+                (Scene as Level).Session.SetFlag(deathflag, true);
+                Add(new DeathEffect(hairColor, new Vector2?(Center - Position)));
+                walker.RemoveSelf();
+                holdable.RemoveSelf();
+                dead = true; //the death effect doesnt appear if i delete the entity, so it just becomes invisible and deactivates
+                Depth = -1000000;
+                Collidable = false;
+                AllowPushing = false;
+                TriggerHappy = false;
             }
         }
 
-
-        public override void Update()
-        {
+        public override void Update() {
             base.Update();
-            if (this.dead) { return; } //do nothing ^
-            Hold.CheckAgainstColliders();
-            if (this.OnGround())
-            {
-                if (this.speed.Y > 0f)
-                {
-                    this.speed.Y = 0f;
-                }
-                if (this.walker.Sprite.Scale.X == 1 && !this.idle) { this.speed.X = 40; } else if (!this.idle) { this.speed.X = -40; }
-                if (this.speed.X == 0f)
-                {
-                    if (!this.inpipe)
-                    {
-                        this.spinninghairsprite.Play("idle");
-                        this.walker.Sprite.Play("idle");
-                    }
-                    else
-                    {
-                        this.walker.Sprite.Play("spin");
-                        this.spinninghairsprite.Play("spin");
-
-                    }
-                }
-                else if (!this.inpipe)
-                {
-                    this.walker.Sprite.Play("walk");
-                    this.spinninghairsprite.Play("idle");
-                }
-                else
-                {
-                    this.walker.Sprite.Play("spin");
-                    this.spinninghairsprite.Play("spin");
-
-                }
+            if (dead) {
+                return;
             }
-            else //if onair, copied from theocrystal
-            {
+
+            holdable.CheckAgainstColliders();
+            if (OnGround()) {
+                if (speed.Y > 0f) {
+                    speed.Y = 0f;
+                }
+
+                if (walker.Sprite.Scale.X == 1 && !idle) {
+                    speed.X = 40;
+                } else if (!idle) {
+                    speed.X = -40;
+                }
+
+                if (speed.X == 0f) {
+                    if (!inPipe) {
+                        spinningHairSprite.Play("idle");
+                        walker.Sprite.Play("idle");
+                    } else {
+                        walker.Sprite.Play("spin");
+                        spinningHairSprite.Play("spin");
+
+                    }
+                } else if (!inPipe) {
+                    walker.Sprite.Play("walk");
+                    spinningHairSprite.Play("idle");
+                } else {
+                    walker.Sprite.Play("spin");
+                    spinningHairSprite.Play("spin");
+
+                }
+            } else {
                 float num = 800f;
-                if (Math.Abs(this.speed.Y) <= 30f)
-                {
+                if (Math.Abs(speed.Y) <= 30f) {
                     num *= 0.5f;
                 }
+
                 float num2 = 350f;
-                if (this.speed.Y < 0f)
-                {
+                if (speed.Y < 0f) {
                     num2 *= 0.5f;
                 }
-                this.speed.X = Calc.Approach(this.speed.X, 0f, num2 * Engine.DeltaTime);
-                if (this.noGravityTimer > 0f)
-                {
-                    this.noGravityTimer -= Engine.DeltaTime;
-                }
-                else
-                {
-                    this.speed.Y = Calc.Approach(this.speed.Y, 200f, num * Engine.DeltaTime);
-                }
-                if (!this.inpipe)
-                {
-                    this.walker.Sprite.Play("idle");
-                    this.spinninghairsprite.Play("idle");
-                }
-                else
-                {
-                    this.walker.Sprite.Play("spin");
-                    this.spinninghairsprite.Play("spin");
 
-
+                speed.X = Calc.Approach(speed.X, 0f, num2 * Engine.DeltaTime);
+                if (noGravityTimer > 0f) {
+                    noGravityTimer -= Engine.DeltaTime;
+                } else {
+                    speed.Y = Calc.Approach(speed.Y, 200f, num * Engine.DeltaTime);
                 }
 
+                if (!inPipe) {
+                    walker.Sprite.Play("idle");
+                    spinningHairSprite.Play("idle");
+                } else {
+                    walker.Sprite.Play("spin");
+                    spinningHairSprite.Play("spin");
+
+                }
             }
 
-            if (base.Top > (float)base.SceneAs<Level>().Bounds.Bottom)
-            {
-                this.Die();
+            if (Top > SceneAs<Level>().Bounds.Bottom) {
+                Die();
+            } else if (Right > SceneAs<Level>().Bounds.Right && walker.Sprite.Scale.X == 1) {
+                Flip();
+            } else if (Left < SceneAs<Level>().Bounds.Left && walker.Sprite.Scale.X == -1) {
+                Flip();
             }
 
-            else if (base.Right > (float)base.SceneAs<Level>().Bounds.Right && this.walker.Sprite.Scale.X == 1)
-            {
-                flip();
-            }
-            else if (base.Left < (float)base.SceneAs<Level>().Bounds.Left && this.walker.Sprite.Scale.X == -1)
-            {
-                flip();
-            }
+            if (OnGround()) {
+                CheckSmartFlip();
+            }  //check it again because i don't want it to flip in midair
 
-            if (this.OnGround()) { this.CheckSmartFlip(); }  //check it again because i don't want it to flip in midair
-            this.bounceSfxDelay -= Engine.DeltaTime; //sound timer
-            base.MoveH(this.speed.X * Engine.DeltaTime, this.onCollideH, null);
-            base.MoveV(this.speed.Y * Engine.DeltaTime, this.onCollideV, null);
-            this.walker.Position = this.Position;
-            this.spinninghairsprite.Scale.X = this.walker.Sprite.Scale.X;
+            bounceSfxDelay -= Engine.DeltaTime; //sound timer
+            MoveH(speed.X * Engine.DeltaTime, onCollideH, null);
+            MoveV(speed.Y * Engine.DeltaTime, onCollideV, null);
+            walker.Position = Position;
+            spinningHairSprite.Scale.X = walker.Sprite.Scale.X;
 
         }
 
-        private void OnCollideH(CollisionData data)
-        {
-            if (data.Hit is DashSwitch)
-            {
-                (data.Hit as DashSwitch).OnDashCollide(null, Vector2.UnitX * (float)Math.Sign(this.speed.X));
-            }
-            flip();
-            if (Math.Abs(this.speed.X) > 100f)
-            {
-                this.ImpactParticles(data.Direction);
+        private void OnCollideH(CollisionData data) {
+            if (data.Hit is DashSwitch) {
+                (data.Hit as DashSwitch).OnDashCollide(null, Vector2.UnitX * Math.Sign(speed.X));
             }
 
-        }
-        private void OnCollideV(CollisionData data)
-        {
-            if (data.Hit is DashSwitch)
-            {
-                (data.Hit as DashSwitch).OnDashCollide(null, Vector2.UnitX * (float)Math.Sign(this.speed.Y));
+            Flip();
+            if (Math.Abs(speed.X) > 100f) {
+                ImpactParticles(data.Direction);
             }
-            if (this.speed.Y > 160f)
-            {
-                this.ImpactParticles(data.Direction);
+        }
+        private void OnCollideV(CollisionData data) {
+            if (data.Hit is DashSwitch) {
+                (data.Hit as DashSwitch).OnDashCollide(null, Vector2.UnitX * Math.Sign(speed.Y));
+            }
+
+            if (speed.Y > 160f) {
+                ImpactParticles(data.Direction);
             }
         }
 
-        private void CheckSmartFlip()
-        {
-
-            if (this.smart && this.OnGround() && !this.idle)
-            {
-                if (this.walker.Sprite.Scale.X == 1)
-                {
-                    if (!this.OnGround(this.Position + new Vector2(8, 0))) { flip(); }
-                }
-                else
-                {
-                    if (!this.OnGround(this.Position + new Vector2(-8, 0))) { flip(); }
+        private void CheckSmartFlip() {
+            if (smart && OnGround() && !idle) {
+                if (walker.Sprite.Scale.X == 1) {
+                    if (!OnGround(Position + new Vector2(8, 0))) {
+                        Flip();
+                    }
+                } else {
+                    if (!OnGround(Position + new Vector2(-8, 0))) {
+                        Flip();
+                    }
                 }
             }
         }
 
-        private void flip() //turns around
-        {
-            if (!this.inpipe)
-            {
-                this.walker.Sprite.Scale.X = -this.walker.Sprite.Scale.X;
+        private void Flip() {
+            if (!inPipe) {
+                walker.Sprite.Scale.X = -walker.Sprite.Scale.X;
             }
-
         }
 
-        private void ImpactParticles(Vector2 dir)
-        {
+        private void ImpactParticles(Vector2 dir) {
             float direction;
             Vector2 position;
             Vector2 positionRange;
-            if (dir.X > 0f)
-            {
+            if (dir.X > 0f) {
                 direction = 3.14159274f;
-                position = new Vector2(base.Right, base.Y - 4f);
+                position = new Vector2(Right, Y - 4f);
                 positionRange = Vector2.UnitY * 6f;
-            }
-            else if (dir.X < 0f)
-            {
+            } else if (dir.X < 0f) {
                 direction = 0f;
-                position = new Vector2(base.Left, base.Y - 4f);
+                position = new Vector2(Left, Y - 4f);
                 positionRange = Vector2.UnitY * 6f;
-            }
-            else if (dir.Y > 0f)
-            {
+            } else if (dir.Y > 0f) {
                 direction = -1.57079637f;
-                position = new Vector2(base.X, base.Bottom);
+                position = new Vector2(X, Bottom);
                 positionRange = Vector2.UnitX * 6f;
-            }
-            else
-            {
+            } else {
                 direction = 1.57079637f;
-                position = new Vector2(base.X, base.Top);
+                position = new Vector2(X, Top);
                 positionRange = Vector2.UnitX * 6f;
             }
-            base.SceneAs<Level>().Particles.Emit(TheoCrystal.P_Impact, 12, position, positionRange, direction);
+
+            SceneAs<Level>().Particles.Emit(TheoCrystal.P_Impact, 12, position, positionRange, direction);
         }
 
+        private BadelineDummy walker;
+        private Color hairColor;
+        private Sprite spinningHairSprite; //used for pipes
+        private readonly bool left = true;
+        private readonly bool idle = false;
+        private Vector2 speed = new(0f, 0f);
 
-        public BadelineDummy walker; //to create the sprite
-        public Color HairColor; //haircolor
-        private Sprite spinninghairsprite; //used for pipes
-        public bool left = true;
-        public bool idle = false;
-        public Vector2 speed = new Vector2(0f, 0f);
-        
-        public bool weak = false; //dies if it touches the player
-        public bool nobackpack = false;
-        public bool dangerous = false; //the player dies if touched
-        public bool ally = false; //the player dies if it dies
-        public bool bouncy = false; //the player bounces if touched
+        private readonly bool weak = false; //dies if it touches the player
+        private readonly bool noBackpack = false;
+        private readonly bool dangerous = false; //the player dies if touched
+        private readonly bool ally = false; //the player dies if it dies
+        private readonly bool bouncy = false; //the player bounces if touched
         private bool dead = false; //used for post - death stuff, it doesn't get "deleted"
-        private bool smart = false; //turn left or right, doesnt fall, like a red koopa
-        private bool ismute = false; //the walk sound is annoying
-        private Collision onCollideH;
-        private Collision onCollideV;
+        private readonly bool smart = false; //turn left or right, doesnt fall, like a red koopa
+        private readonly bool isMute = false; //the walk sound is annoying
+        private readonly Collision onCollideH;
+        private readonly Collision onCollideV;
         //holdable stuff
-        public Holdable Hold;
+        private readonly Holdable holdable;
         private float noGravityTimer;
         //bounce sound
         private float bounceSfxDelay;
         //pandorasbox crossover stuff
-        private bool pandyinstalled;
-        private bool inpipe;
+        private readonly bool pandyInstalled;
+        private bool inPipe;
         //deathflag
-        private string deathflag = "WalkelineIsDead";
-        public bool triggerhappy = false; //interacts with triggers
+        private readonly string deathflag = "WalkelineIsDead"; // bugged - Kahuna
+        public bool TriggerHappy = false; //interacts with triggers
     }
 }

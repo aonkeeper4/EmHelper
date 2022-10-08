@@ -1,114 +1,87 @@
-﻿using Celeste.Mod.Entities;
+﻿using Celeste.Mod.EmHelper.Entities;
+using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Celeste.Mod.EmHelper.triggers
-{
+namespace Celeste.Mod.EmHelper.triggers {
     [CustomEntity("EmHelper/Switchtrigger")]
-    public class Switchtrigger : Trigger
-    {
-
-        public Switchtrigger(EntityData data, Vector2 offset) : base(data, offset)
-        {
-            this.Index = data.HexColor("color", Calc.HexToColor("82d9ff"));
-            this.onetime = data.Bool("onetime", false);
+    public class SwitchTrigger : Trigger {
+        public SwitchTrigger(EntityData data, Vector2 offset)
+            : base(data, offset) {
+            Index = data.HexColor("color", Calc.HexToColor("82d9ff"));
+            onetime = data.Bool("onetime", false);
         }
 
-        public override void OnEnter(Player player)
-        {
+        public override void OnEnter(Player player) {
             base.OnEnter(player);
             Activate();
-            if (onetime)
-            {
-                base.RemoveSelf();
+            if (onetime) {
+                RemoveSelf();
             }
         }
 
-        public override void OnLeave(Player player)
-        {
+        public override void OnLeave(Player player) {
             base.OnLeave(player);
             Activate();
-            if (onetime)
-            {
-                base.RemoveSelf();
+            if (onetime) {
+                RemoveSelf();
             }
         }
 
-        public void Activate()
-        {
-            foreach (Entity entity in base.Scene.Tracker.GetEntities<Entities.Monumentswitchblock>())
-            {
-                Entities.Monumentswitchblock switchBlock = (Entities.Monumentswitchblock)entity;
-                if (switchBlock.Index == this.Index)
-                {
+        public void Activate() {
+            foreach (MonumentSwitchBlock switchBlock in Scene.Tracker.GetEntities<MonumentSwitchBlock>()) {
+                if (switchBlock.Index == Index) {
                     switchBlock.Activated = !switchBlock.Activated;
-
                 }
             }
-            foreach (Entity entity in base.Scene.Tracker.GetEntities<Entities.MonumentBooster>())
-            {
-                Entities.MonumentBooster bubble = (Entities.MonumentBooster)entity;
-                if (bubble.Index == this.Index)
-                {
-                    bubble.active = !bubble.active;
-                    bubble.Activate(bubble.active);
 
-                }
-            }
-            foreach (Entity entity in base.Scene.Tracker.GetEntities<Entities.Monumentpressureplate>())
-            {
-                Entities.Monumentpressureplate pressureplate = (Entities.Monumentpressureplate)entity;
-                if (pressureplate.Index == this.Index && pressureplate.isButton && !pressureplate.cassettedisable)
-                {
-                    pressureplate.buttondisable = !pressureplate.buttondisable;
-                    if (pressureplate.buttondisable)
-                    {
+            foreach (MonumentPressurePlate pressureplate in Scene.Tracker.GetEntities<MonumentPressurePlate>()) {
+                if (pressureplate.Index == Index && pressureplate.IsButton && !pressureplate.CassetteDisable) {
+                    pressureplate.ButtonDisable = !pressureplate.ButtonDisable;
+                    if (pressureplate.ButtonDisable) {
                         pressureplate.OnDisable();
-
+                    } else {
+                        pressureplate.OnEnable();
                     }
-                    else { pressureplate.OnEnable(); }
                 }
             }
-            foreach (Entity entity in base.Scene.Tracker.GetEntities<Entities.Monumentswapblock>())
-            {
-                Entities.Monumentswapblock swapBlock = (Entities.Monumentswapblock)entity;
-                if (swapBlock.Index == this.Index)
-                {
+
+            foreach (MonumentSwapBlock swapBlock in Scene.Tracker.GetEntities<MonumentSwapBlock>()) {
+                if (swapBlock.Index == Index) {
                     swapBlock.Activated();
 
                 }
             }
-            foreach (Entity entity in base.Scene.Tracker.GetEntities<Entities.Monumentflipswitch>())
-            {
-                Entities.Monumentflipswitch flipswitch = (Entities.Monumentflipswitch)entity;
-                if (flipswitch.Index == this.Index)
-                {
+
+            foreach (MonumentBooster bubble in Scene.Tracker.GetEntities<MonumentBooster>()) {
+                if (bubble.Index == Index) {
+                    bubble.Activated = !bubble.Activated;
+                    bubble.Activate(bubble.Activated);
+
+                }
+            }
+
+            foreach (MonumentFlipSwitch flipswitch in Scene.Tracker.GetEntities<MonumentFlipSwitch>()) {
+                if (flipswitch.Index == Index) {
                     flipswitch.Enable = !flipswitch.Enable;
                     flipswitch.SetSprite(true);
 
                 }
             }
-            foreach (Entity entity in base.Scene.Tracker.GetEntities<Entities.Monumentspikes>())
-            {
-                Entities.Monumentspikes spikes = (Entities.Monumentspikes)entity;
-                if (spikes.EnabledColor == this.Index)
-                {
-                    spikes.monumentenable = !spikes.monumentenable;
-                    if (spikes.monumentenable)
-                    {
-                        spikes.OnEnable();
-                    }
-                    else { spikes.OnDisable(); }
 
+            foreach (MonumentSpikes spikes in Scene.Tracker.GetEntities<MonumentSpikes>()) {
+                if (spikes.EnabledColor == Index) {
+                    spikes.MonumentEnable = !spikes.MonumentEnable;
+                    if (spikes.MonumentEnable) {
+                        spikes.OnEnable();
+                    } else {
+                        spikes.OnDisable();
+                    }
                 }
             }
-
         }
+
         private Color Index; //color to activate
-        private bool onetime;
-
-
-
+        private readonly bool onetime;
     }
 }
-

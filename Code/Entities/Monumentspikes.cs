@@ -4,8 +4,7 @@ using Monocle;
 using System;
 using System.Collections.Generic;
 
-namespace Celeste.Mod.EmHelper.Entities
-{
+namespace Celeste.Mod.EmHelper.Entities {
     [Tracked]
     [CustomEntity(new string[]
     {
@@ -14,339 +13,275 @@ namespace Celeste.Mod.EmHelper.Entities
         "EmHelper/MonumentspikesLeft = LoadLeft",
         "EmHelper/MonumentspikesRight = LoadRight"
     })]
-
-    public class Monumentspikes : Entity
-    {
-        public static Entity LoadUp(Level level, LevelData levelData, Vector2 offset, EntityData entityData)
-        {
+    public class MonumentSpikes : Entity {
+        public static Entity LoadUp(Level level, LevelData levelData, Vector2 offset, EntityData entityData) {
             entityData.Values["type"] = entityData.Attr("type", "default");
-            return new Monumentspikes(entityData, offset, Monumentspikes.Directions.Up);
+            return new MonumentSpikes(entityData, offset, Directions.Up);
         }
 
-        public static Entity LoadDown(Level level, LevelData levelData, Vector2 offset, EntityData entityData)
-        {
+        public static Entity LoadDown(Level level, LevelData levelData, Vector2 offset, EntityData entityData) {
             entityData.Values["type"] = entityData.Attr("type", "default");
-            return new Monumentspikes(entityData, offset, Monumentspikes.Directions.Down);
+            return new MonumentSpikes(entityData, offset, Directions.Down);
         }
 
-        public static Entity LoadLeft(Level level, LevelData levelData, Vector2 offset, EntityData entityData)
-        {
+        public static Entity LoadLeft(Level level, LevelData levelData, Vector2 offset, EntityData entityData) {
             entityData.Values["type"] = entityData.Attr("type", "default");
-            return new Monumentspikes(entityData, offset, Monumentspikes.Directions.Left);
+            return new MonumentSpikes(entityData, offset, Directions.Left);
         }
 
-        public static Entity LoadRight(Level level, LevelData levelData, Vector2 offset, EntityData entityData)
-        {
+        public static Entity LoadRight(Level level, LevelData levelData, Vector2 offset, EntityData entityData) {
             entityData.Values["type"] = entityData.Attr("type", "default");
-            return new Monumentspikes(entityData, offset, Monumentspikes.Directions.Right);
+            return new MonumentSpikes(entityData, offset, Directions.Right);
         }
 
-        public Monumentspikes(Vector2 position, int size, Monumentspikes.Directions direction, string type, Color color, bool active) : base(position)
-        {
-            this.monumentenable = active;
-            this.EnabledColor = color;
+        public MonumentSpikes(Vector2 position, int size, Directions direction, string type, Color color, bool active)
+            : base(position) {
+            MonumentEnable = active;
+            EnabledColor = color;
             Color disablecolor = Calc.HexToColor("667da5");
-            this.DisabledColor = new Color((float)disablecolor.R / 255f * ((float)this.EnabledColor.R / 255f), (float)disablecolor.G / 255f * ((float)this.EnabledColor.G / 255f), (float)disablecolor.B / 255f * ((float)this.EnabledColor.B / 255f), 1f);
-            base.Depth = -1;
-            this.Direction = direction;
+            disabledColor = new Color(disablecolor.R / 255f * (EnabledColor.R / 255f), disablecolor.G / 255f * (EnabledColor.G / 255f), disablecolor.B / 255f * (EnabledColor.B / 255f), 1f);
+            Depth = -1;
+            this.direction = direction;
             this.size = size;
-            this.overrideType = type;
-            switch (direction)
-            {
-                case Monumentspikes.Directions.Up:
-                    base.Collider = new Hitbox((float)size, 3f, 0f, -3f);
-                    base.Add(new LedgeBlocker(null));
+            overrideType = type;
+            switch (direction) {
+                case Directions.Up:
+                    Collider = new Hitbox(size, 3f, 0f, -3f);
+                    Add(new LedgeBlocker(null));
                     break;
-                case Monumentspikes.Directions.Down:
-                    base.Collider = new Hitbox((float)size, 3f, 0f, 0f);
+                case Directions.Down:
+                    Collider = new Hitbox(size, 3f, 0f, 0f);
                     break;
-                case Monumentspikes.Directions.Left:
-                    base.Collider = new Hitbox(3f, (float)size, -3f, 0f);
-                    base.Add(new LedgeBlocker(null));
+                case Directions.Left:
+                    Collider = new Hitbox(3f, size, -3f, 0f);
+                    Add(new LedgeBlocker(null));
                     break;
-                case Monumentspikes.Directions.Right:
-                    base.Collider = new Hitbox(3f, (float)size, 0f, 0f);
-                    base.Add(new LedgeBlocker(null));
+                case Directions.Right:
+                    Collider = new Hitbox(3f, size, 0f, 0f);
+                    Add(new LedgeBlocker(null));
                     break;
             }
-            base.Add(this.pc = new PlayerCollider(new Action<Player>(this.OnCollide), null, null));
-            base.Add(new StaticMover
-            {
-                OnShake = new Action<Vector2>(this.OnShake),
-                SolidChecker = new Func<Solid, bool>(this.IsRiding),
-                JumpThruChecker = new Func<JumpThru, bool>(this.IsRiding),
-                OnEnable = new Action(this.OnStaticMoverEnable),
-                OnDisable = new Action(this.OnStaticMoverDisable)
+
+            Add(new PlayerCollider(new Action<Player>(OnCollide), null, null));
+            Add(new StaticMover {
+                OnShake = new Action<Vector2>(OnShake),
+                SolidChecker = new Func<Solid, bool>(IsRiding),
+                JumpThruChecker = new Func<JumpThru, bool>(IsRiding),
+                OnEnable = new Action(OnStaticMoverEnable),
+                OnDisable = new Action(OnStaticMoverDisable)
             });
 
-
         }
 
-        public Monumentspikes(EntityData data, Vector2 offset, Monumentspikes.Directions dir) : this(data.Position + offset, Monumentspikes.GetSize(data, dir), dir, data.Attr("type", "default"), data.HexColor("color", Calc.HexToColor("82d9ff")), data.Bool("active", true))
-        {
+        public MonumentSpikes(EntityData data, Vector2 offset, Directions dir)
+            : this(data.Position + offset, GetSize(data, dir), dir, data.Attr("type", "default"), data.HexColor("color", Calc.HexToColor("82d9ff")), data.Bool("active", true)) {
         }
 
-        public void SetSpikeColor(Color color)
-        {
-            foreach (Component component in base.Components)
-            {
-                Image image = component as Image;
-                if (image != null)
-                {
+        public void SetSpikeColor(Color color) {
+            foreach (Component component in Components) {
+                if (component is Image image) {
                     image.Color = color;
                 }
             }
         }
 
-        public override void Added(Scene scene)
-        {
+        public override void Added(Scene scene) {
             base.Added(scene);
             AreaData areaData = AreaData.Get(scene);
-            this.spikeType = areaData.Spike;
-            if (!string.IsNullOrEmpty(this.overrideType) && !this.overrideType.Equals("default"))
-            {
-                this.spikeType = this.overrideType;
+            spikeType = areaData.Spike;
+            if (!string.IsNullOrEmpty(overrideType) && !overrideType.Equals("default")) {
+                spikeType = overrideType;
             }
-            string str = this.Direction.ToString().ToLower();
-            if (this.spikeType == "tentacles")
-            {
-                for (int i = 0; i < this.size / 16; i++)
-                {
-                    this.AddTentacle((float)i);
+
+            string str = direction.ToString().ToLower();
+            if (spikeType == "tentacles") {
+                for (int i = 0; i < size / 16; i++) {
+                    AddTentacle(i);
                 }
-                if (this.size / 8 % 2 == 1)
-                {
-                    this.AddTentacle((float)(this.size / 16) - 0.5f);
+
+                if (size / 8 % 2 == 1) {
+                    AddTentacle((size / 16) - 0.5f);
                     return;
                 }
-            }
-            else
-            {
-                List<MTexture> atlasSubtextures = GFX.Game.GetAtlasSubtextures("danger/spikes/" + this.spikeType + "_" + str);
-                for (int j = 0; j < this.size / 8; j++)
-                {
-                    Image image = new Image(Calc.Random.Choose(atlasSubtextures));
-                    switch (this.Direction)
-                    {
-                        case Monumentspikes.Directions.Up:
+            } else {
+                List<MTexture> atlasSubtextures = GFX.Game.GetAtlasSubtextures("danger/spikes/" + spikeType + "_" + str);
+                for (int j = 0; j < size / 8; j++) {
+                    Image image = new(Calc.Random.Choose(atlasSubtextures));
+                    switch (direction) {
+                        case Directions.Up:
                             image.JustifyOrigin(0.5f, 1f);
-                            image.Position = Vector2.UnitX * ((float)j + 0.5f) * 8f + Vector2.UnitY;
+                            image.Position = (Vector2.UnitX * (j + 0.5f) * 8f) + Vector2.UnitY;
                             break;
-                        case Monumentspikes.Directions.Down:
+                        case Directions.Down:
                             image.JustifyOrigin(0.5f, 0f);
-                            image.Position = Vector2.UnitX * ((float)j + 0.5f) * 8f - Vector2.UnitY;
+                            image.Position = (Vector2.UnitX * (j + 0.5f) * 8f) - Vector2.UnitY;
                             break;
-                        case Monumentspikes.Directions.Left:
+                        case Directions.Left:
                             image.JustifyOrigin(1f, 0.5f);
-                            image.Position = Vector2.UnitY * ((float)j + 0.5f) * 8f + Vector2.UnitX;
+                            image.Position = (Vector2.UnitY * (j + 0.5f) * 8f) + Vector2.UnitX;
                             break;
-                        case Monumentspikes.Directions.Right:
+                        case Directions.Right:
                             image.JustifyOrigin(0f, 0.5f);
-                            image.Position = Vector2.UnitY * ((float)j + 0.5f) * 8f - Vector2.UnitX;
+                            image.Position = (Vector2.UnitY * (j + 0.5f) * 8f) - Vector2.UnitX;
                             break;
                     }
-                    base.Add(image);
+
+                    Add(image);
                 }
             }
-            if (this.monumentenable)
-            {
+
+            if (MonumentEnable) {
                 OnEnable();
+            } else {
+                OnDisable();
             }
-            else { OnDisable(); }
         }
 
-        private void AddTentacle(float i)
-        {
+        private void AddTentacle(float i) {
             Sprite sprite = GFX.SpriteBank.Create("tentacles");
             sprite.Play(Calc.Random.Next(3).ToString(), true, true);
-            sprite.Position = ((this.Direction == Monumentspikes.Directions.Up || this.Direction == Monumentspikes.Directions.Down) ? Vector2.UnitX : Vector2.UnitY) * (i + 0.5f) * 16f;
-            sprite.Scale.X = (float)Calc.Random.Choose(-1, 1);
+            sprite.Position = ((direction is Directions.Up or Directions.Down) ? Vector2.UnitX : Vector2.UnitY) * (i + 0.5f) * 16f;
+            sprite.Scale.X = Calc.Random.Choose(-1, 1);
             sprite.SetAnimationFrame(Calc.Random.Next(sprite.CurrentAnimationTotalFrames));
-            if (this.Direction == Monumentspikes.Directions.Up)
-            {
+            if (direction == Directions.Up) {
                 sprite.Rotation = -1.57079637f;
                 Sprite sprite2 = sprite;
                 float num = sprite2.Y;
                 sprite2.Y = num + 1f;
-            }
-            else if (this.Direction == Monumentspikes.Directions.Right)
-            {
+            } else if (direction == Directions.Right) {
                 sprite.Rotation = 0f;
                 Sprite sprite3 = sprite;
                 float num = sprite3.X;
                 sprite3.X = num - 1f;
-            }
-            else if (this.Direction == Monumentspikes.Directions.Left)
-            {
+            } else if (direction == Directions.Left) {
                 sprite.Rotation = 3.14159274f;
                 Sprite sprite4 = sprite;
                 float num = sprite4.X;
                 sprite4.X = num + 1f;
-            }
-            else if (this.Direction == Monumentspikes.Directions.Down)
-            {
+            } else if (direction == Directions.Down) {
                 sprite.Rotation = 1.57079637f;
                 Sprite sprite5 = sprite;
                 float num = sprite5.Y;
                 sprite5.Y = num - 1f;
             }
+
             sprite.Rotation += 1.57079637f;
-            base.Add(sprite);
+            Add(sprite);
         }
 
-        public void OnStaticMoverEnable()
-        {
-            this.staticmoverenable = true;
+        public void OnStaticMoverEnable() {
+            staticmoverenable = true;
             OnEnable();
         }
 
-        public void OnEnable()
-        {
-            if (this.staticmoverenable && this.monumentenable)
-            {
-                this.Active = (this.Visible = (this.Collidable = true));
-                this.SetSpikeColor(this.EnabledColor);
+        public void OnEnable() {
+            if (staticmoverenable && MonumentEnable) {
+                Active = Visible = Collidable = true;
+                SetSpikeColor(EnabledColor);
             }
-
-
-
         }
 
-        public void OnStaticMoverDisable()
-        {
-            this.staticmoverenable = false;
+        public void OnStaticMoverDisable() {
+            staticmoverenable = false;
             OnDisable();
         }
 
-        public void OnDisable()
-        {
-            this.Active = (this.Collidable = false);
-
-            this.SetSpikeColor(this.DisabledColor);
-
+        public void OnDisable() {
+            Active = Collidable = false;
+            SetSpikeColor(disabledColor);
         }
 
-
-
-        private void OnShake(Vector2 amount)
-        {
-            this.imageOffset += amount;
+        private void OnShake(Vector2 amount) {
+            imageOffset += amount;
         }
 
-        public override void Render()
-        {
-            Vector2 position = this.Position;
-            this.Position += this.imageOffset;
+        public override void Render() {
+            Vector2 position = Position;
+            Position += imageOffset;
             base.Render();
-            this.Position = position;
+            Position = position;
         }
 
-        public void SetOrigins(Vector2 origin)
-        {
-            foreach (Component component in base.Components)
-            {
-                Image image = component as Image;
-                if (image != null)
-                {
-                    Vector2 vector = origin - this.Position;
+        public void SetOrigins(Vector2 origin) {
+            foreach (Component component in Components) {
+                if (component is Image image) {
+                    Vector2 vector = origin - Position;
                     image.Origin = image.Origin + vector - image.Position;
                     image.Position = vector;
                 }
             }
         }
 
-        private void OnCollide(Player player)
-        {
-            switch (this.Direction)
-            {
-                case Monumentspikes.Directions.Up:
-                    if (player.Speed.Y >= 0f && player.Bottom <= base.Bottom)
-                    {
+        private void OnCollide(Player player) {
+            switch (direction) {
+                case Directions.Up:
+                    if (player.Speed.Y >= 0f && player.Bottom <= Bottom) {
                         player.Die(new Vector2(0f, -1f), false, true);
                         return;
                     }
+
                     break;
-                case Monumentspikes.Directions.Down:
-                    if (player.Speed.Y <= 0f)
-                    {
+                case Directions.Down:
+                    if (player.Speed.Y <= 0f) {
                         player.Die(new Vector2(0f, 1f), false, true);
                         return;
                     }
+
                     break;
-                case Monumentspikes.Directions.Left:
-                    if (player.Speed.X >= 0f)
-                    {
+                case Directions.Left:
+                    if (player.Speed.X >= 0f) {
                         player.Die(new Vector2(-1f, 0f), false, true);
                         return;
                     }
+
                     break;
-                case Monumentspikes.Directions.Right:
-                    if (player.Speed.X <= 0f)
-                    {
+                case Directions.Right:
+                    if (player.Speed.X <= 0f) {
                         player.Die(new Vector2(1f, 0f), false, true);
                     }
+
                     break;
                 default:
                     return;
             }
         }
 
-        private static int GetSize(EntityData data, Monumentspikes.Directions dir)
-        {
-            if (dir > Monumentspikes.Directions.Down)
-            {
-                int num = dir - Monumentspikes.Directions.Left;
-                return data.Height;
-            }
-            return data.Width;
+        private static int GetSize(EntityData data, Directions dir) {
+            return dir > Directions.Down ? data.Height : data.Width;
         }
 
-        private bool IsRiding(Solid solid)
-        {
-            switch (this.Direction)
-            {
-                case Monumentspikes.Directions.Up:
-                    return base.CollideCheckOutside(solid, this.Position + Vector2.UnitY);
-                case Monumentspikes.Directions.Down:
-                    return base.CollideCheckOutside(solid, this.Position - Vector2.UnitY);
-                case Monumentspikes.Directions.Left:
-                    return base.CollideCheckOutside(solid, this.Position + Vector2.UnitX);
-                case Monumentspikes.Directions.Right:
-                    return base.CollideCheckOutside(solid, this.Position - Vector2.UnitX);
-                default:
-                    return false;
-            }
+        private bool IsRiding(Solid solid) {
+            return direction switch {
+                Directions.Up => CollideCheckOutside(solid, Position + Vector2.UnitY),
+                Directions.Down => CollideCheckOutside(solid, Position - Vector2.UnitY),
+                Directions.Left => CollideCheckOutside(solid, Position + Vector2.UnitX),
+                Directions.Right => CollideCheckOutside(solid, Position - Vector2.UnitX),
+                _ => false,
+            };
         }
 
-        private bool IsRiding(JumpThru jumpThru)
-        {
-            Monumentspikes.Directions direction = this.Direction;
-            return direction == Monumentspikes.Directions.Up && base.CollideCheck(jumpThru, this.Position + Vector2.UnitY);
+        private bool IsRiding(JumpThru jumpThru) {
+            return direction == Directions.Up && CollideCheck(jumpThru, Position + Vector2.UnitY);
         }
 
-        public const string TentacleType = "tentacles";
-
-        public Monumentspikes.Directions Direction;
-
-        private PlayerCollider pc;
+        private readonly Directions direction;
 
         private Vector2 imageOffset;
 
-        private int size;
+        private readonly int size;
 
-        public bool monumentenable = false;
-        public bool staticmoverenable = true;
+        public bool MonumentEnable = false;
+        private bool staticmoverenable = true;
 
-        private string overrideType;
+        private readonly string overrideType;
 
         private string spikeType;
 
         public Color EnabledColor;
 
-        public Color DisabledColor;
+        private Color disabledColor;
 
-        public enum Directions
-        {
+        public enum Directions {
             Up,
             Down,
             Left,
