@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Sprites>
+ <walkeline path="characters/walkeline/">
+    <Justify x=".5" y="1" />
+    <Loop id="idle" path="idle" delay="0.1" />
+    <Loop id="idleA" path="idle" delay="0.1" />
+    <Loop id="idleB" path="idle" delay="0.1" />
+    <Loop id="idleC" path="idle" delay="0.1" />
+    <Loop id="walk" path="walk" delay="0.06" />    
+    <Loop id="spin" path="spin" delay="0.1" />
+    <Metadata>
+      <Frames path="idle" hair="0,-2|0,-2|0,-2|0,-2|0,-1|0,-1|0,-1|0,-1|0,-1"/>
+      <Frames path="walk" hair="0,-2|0,-1|0,-1|0,-1|0,-3|0,-2|0,-1|0,-1|0,-1|0,-1|0,-3|0,-2"/>
+     </Metadata>
+  </walkeline>
+
+ <wspinninghair path="characters/wspinninghair/">
+    <Justify x=".5" y="1" />
+    <Loop id="idle" path="idle" delay="0.1" />   
+    <Loop id="spin" path="spin" delay="0.1" />
+  </wspinninghair>
+
+ <windupwspinninghair path="characters/windupwspinninghair/">
+    <Justify x=".5" y="1" />
+    <Loop id="idle" path="idle" delay="0.1" />   
+    <Loop id="spin" path="spin" delay="0.1" />
+  </windupwspinninghair>
+
+<windupwalkeline path="characters/windupwalkeline/">
+    <Justify x=".5" y="1" />
+    <Loop id="idle" path="idle" delay="0.1" />
+    <Loop id="idleA" path="idle" delay="0.1" />
+    <Loop id="idleB" path="idle" delay="0.1" />
+    <Loop id="idleC" path="idle" delay="0.1" />
+    <Loop id="walk" path="walk" delay="0.06" />    
+    <Loop id="spin" path="spin" delay="0.1" />
+    <Metadata>
+      <Frames path="idle" hair="0,-2|0,-2|0,-2|0,-2|0,-1|0,-1|0,-1|0,-1|0,-1"/>
+      <Frames path="walk" hair="0,-2|0,-1|0,-1|0,-1|0,-3|0,-2|0,-1|0,-1|0,-1|0,-1|0,-3|0,-2"/>
+     </Metadata>
+  </windupwalkeline>
+
+
+<monumentflipswitch0 path="objects/monumentflipswitch0/" start="hot">
+    <Center/>
+    <Anim id="hot" path="switch" frames="10-0" delay="0.05" goto="hotLoop"/>
+    <Loop id="hotLoop" path="switch" frames="0-1" delay="0.05"/>
+    <Anim id="hotOff" path="switch" frames="10-0,15-16" delay="0.05"/>
+    <Loop id="hotOffLoop" path="switch" frames="16" delay="0.05"/>
+    <Anim id="ice" path="switch" frames="2-12" delay="0.05" goto="iceLoop"/>
+    <Loop id="iceLoop" path="switch" frames="11-12" delay="0.05"/>
+    <Anim id="iceOff" path="switch" frames="2-12,13-14" delay="0.05"/>
+    <Loop id="iceOffLoop" path="switch" frames="14" delay="0.05"/>
+  </monumentflipswitch0>
+
+<monumentflipswitch1 path="objects/monumentflipswitch1/" start="hot">
+    <Center/>
+    <Anim id="hot" path="switch" frames="10-0" delay="0.05" goto="hotLoop"/>
+    <Loop id="hotLoop" path="switch" frames="0-1" delay="0.05"/>
+    <Anim id="hotOff" path="switch" frames="10-0,15-16" delay="0.05"/>
+    <Loop id="hotOffLoop" path="switch" frames="16" delay="0.05"/>
+    <Anim id="ice" path="switch" frames="2-12" delay="0.05" goto="iceLoop"/>
+    <Loop id="iceLoop" path="switch" frames="11-12" delay="0.05"/>
+    <Anim id="iceOff" path="switch" frames="2-12,13-14" delay="0.05"/>
+    <Loop id="iceOffLoop" path="switch" frames="14" delay="0.05"/>
+  </monumentflipswitch1>
+
+<monumentflipswitch2 path="objects/monumentflipswitch2/" start="hot">
+    <Center/>
+    <Anim id="hot" path="switch" frames="10-0" delay="0.05" goto="hotLoop"/>
+    <Loop id="hotLoop" path="switch" frames="0-1" delay="0.05"/>
+    <Anim id="hotOff" path="switch" frames="10-0,15-16" delay="0.05"/>
+    <Loop id="hotOffLoop" path="switch" frames="16" delay="0.05"/>
+    <Anim id="ice" path="switch" frames="2-12" delay="0.05" goto="iceLoop"/>
+    <Loop id="iceLoop" path="switch" frames="11-12" delay="0.05"/>
+    <Anim id="iceOff" path="switch" frames="2-12,13-14" delay="0.05"/>
+    <Loop id="iceOffLoop" path="switch" frames="14" delay="0.05"/>
+  </monumentflipswitch2>
+
+<monumentflipswitch3 path="objects/monumentflipswitch3/" start="hot">
+    <Center/>
+    <Anim id="hot" path="switch" frames="10-0" delay="0.05" goto="hotLoop"/>
+    <Loop id="hotLoop" path="switch" frames="0-1" delay="0.05"/>
+    <Anim id="hotOff" path="switch" frames="10-0,15-16" delay="0.05"/>
+    <Loop id="hotOffLoop" path="switch" frames="16" delay="0.05"/>
+    <Anim id="ice" path="switch" frames="2-12" delay="0.05" goto="iceLoop"/>
+    <Loop id="iceLoop" path="switch" frames="11-12" delay="0.05"/>
+    <Anim id="iceOff" path="switch" frames="2-12,13-14" delay="0.05"/>
+    <Loop id="iceOffLoop" path="switch" frames="14" delay="0.05"/>
+  </monumentflipswitch3>
+</Sprites>

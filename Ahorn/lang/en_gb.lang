@@ -1,0 +1,24 @@
+#walkeline
+placements.entities.EmHelper/Walkeline.tooltips.weak=The entity will die if it collides with the player
+placements.entities.EmHelper/Walkeline.tooltips.dangerous=The player will die if it collides with the entity
+placements.entities.EmHelper/Walkeline.tooltips.ally=The player will die if the entity dies
+placements.entities.EmHelper/Walkeline.tooltips.bouncy=The player will bounce back if it collides with the entity
+placements.entities.EmHelper/Walkeline.tooltips.smart=The entity won't fall into pits, like a red koopa
+#monumentswitchblock
+placements.entities.EmHelper/Monumentswitchblock.tooltips.pattern=0-3, the block's texture
+placements.entities.EmHelper/Monumentswitchblock.tooltips.active=the block will start as active
+placements.entities.EmHelper/Monumentswitchblock.tooltips.color=the block's color, it will be activated by entities with the same hex code
+#monumentswapblock
+placements.entities.EmHelper/Monumentswapblock.tooltips.pattern=0-3, the block's texture
+placements.entities.EmHelper/Monumentswapblock.tooltips.color=the block's color, it will be activated by entities with the same hex code
+#monumentpressureplate
+placements.entities.EmHelper/Monumentpressureplate.tooltips.color=the pressure plate's color, it will activate the entities with the same hex code
+placements.entities.EmHelper/Monumentpressureplate.tooltips.onetime=the pressure plate will work only once, acting as a one time button
+placements.entities.EmHelper/Monumentpressureplate.tooltips.isButton=the entity will act like a button instead of a pressure plate
+placements.entities.EmHelper/Monumentpressureplate.tooltips.disable= The entity will start as disabled. Use it only with isButton enabled, a disabled pressure plate will never activate!
+#monumentflipswitch
+placements.entities.EmHelper/Monumentflipswitch.tooltips.color=the toggle's color, it will activate the entities with the same hex code
+placements.entities.EmHelper/Monumentflipswitch.tooltips.pattern=0-3, the toggle's texture
+#monumentspikes
+placements.entities.EmHelper/Monumentspikes.tooltips.color=the spikes' color, it will be activated by entities with the same hex code
+placements.entities.EmHelper/Monumentspikes.tooltips.active=the spikes will start as active

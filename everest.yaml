@@ -1,0 +1,9 @@
+- Name: EmHelper
+  Version: 1.2.1
+  DLL: Code/bin/EmHelper.dll
+  Dependencies:
+    - Name: Everest
+      Version: 1.1992.0
+  OptionalDependencies:
+    - Name: PandorasBox
+      Version: 1.0.22
