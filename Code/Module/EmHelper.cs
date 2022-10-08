@@ -3,6 +3,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
+using System;
 using System.Reflection;
 
 namespace Celeste.Mod.EmHelper.Module {
@@ -26,12 +27,10 @@ namespace Celeste.Mod.EmHelper.Module {
             if (cursor.TryGotoNext(MoveType.After, instr => instr.MatchLdarg(0), instr => instr.MatchLdloc(10), instr => instr.MatchCall<Entity>("CollideCheck"))) {
                 cursor.Emit(OpCodes.Ldarg_0); //adds the player to the stack, thanks max!
                 cursor.Emit(OpCodes.Ldloc_S, il.Body.Variables[10]); //adds the trigger to the stack, thanks again max!
-                cursor.EmitDelegate(ReplacePlayerTriggerCollision);
+                cursor.EmitDelegate<Func<bool, Player, Trigger, bool>>((collided, player, trigger) => {
+                    return collided || CheckWalkelinesInsideTrigger(player, trigger);
+                });
             }
-        }
-
-        private bool ReplacePlayerTriggerCollision(bool collision, Player player, Trigger trigger) { //added after the vanilla's player/trigger and returns it || a walkeline/trigger collision
-            return collision || CheckWalkelinesInsideTrigger(player, trigger);
         }
 
         private bool CheckWalkelinesInsideTrigger(Player player, Trigger trigger) {
