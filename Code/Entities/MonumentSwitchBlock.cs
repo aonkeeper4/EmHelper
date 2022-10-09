@@ -7,6 +7,8 @@ namespace Celeste.Mod.EmHelper.Entities {
     [Tracked]
     [CustomEntity("EmHelper/Monumentswitchblock")]
     public class MonumentSwitchBlock : Solid {
+        private readonly MonumentActivator activator;
+
         public MonumentSwitchBlock(Vector2 position, float width, float height, int pattern, bool active, Color color)
             : base(position, width, height, false) {
             this.pattern = pattern;
@@ -15,9 +17,10 @@ namespace Celeste.Mod.EmHelper.Entities {
             solid = new List<Image>();
             all = new List<Image>();
             SurfaceSoundIndex = 35;
-            Index = color;
-            Activated = active;
             Add(occluder = new LightOcclude(1f));
+
+            activator = new MonumentActivator(color, active);
+            Add(activator);
         }
 
         public MonumentSwitchBlock(EntityData data, Vector2 offset)
@@ -27,25 +30,19 @@ namespace Celeste.Mod.EmHelper.Entities {
         public override void Awake(Scene scene) {
             base.Awake(scene);
             Color color = Calc.HexToColor("667da5");
-            Color disabledColor = new(color.R / 255f * (Index.R / 255f), color.G / 255f * (Index.G / 255f), color.B / 255f * (Index.B / 255f), 1f);
+            Color disabledColor = new(color.R / 255f * (activator.Index.R / 255f), color.G / 255f * (activator.Index.G / 255f), color.B / 255f * (activator.Index.B / 255f), 1f);
             scene.Add(side = new BoxSide(this, disabledColor));
             foreach (StaticMover staticMover in staticMovers) {
                 if (staticMover.Entity is Spikes spikes) {
-                    spikes.EnabledColor = Index;
+                    spikes.EnabledColor = activator.Index;
                     spikes.DisabledColor = disabledColor;
                     spikes.VisibleWhenDisabled = true;
-                    spikes.SetSpikeColor(Index);
+                    spikes.SetSpikeColor(activator.Index);
                 }
 
                 if (staticMover.Entity is Spring spring) {
                     spring.DisabledColor = disabledColor;
                     spring.VisibleWhenDisabled = true;
-                }
-
-                if (staticMover.Entity is MonumentSpikes monumentspikes) {
-                    if (monumentspikes.EnabledColor == Index) {
-                        monumentspikes.MonumentEnable = Activated; //it fixes a stupid interaction with a active spike on a deactivated switchblock
-                    }
                 }
             }
 
@@ -134,7 +131,7 @@ namespace Celeste.Mod.EmHelper.Entities {
 
         private void FindInGroup(MonumentSwitchBlock block) {
             foreach (MonumentSwitchBlock switchblock in Scene.Tracker.GetEntities<MonumentSwitchBlock>()) {
-                if (switchblock != this && switchblock != block && switchblock.Index == Index && (switchblock.CollideRect(new Rectangle((int)block.X - 1, (int)block.Y, (int)block.Width + 2, (int)block.Height)) || switchblock.CollideRect(new Rectangle((int)block.X, (int)block.Y - 1, (int)block.Width, (int)block.Height + 2))) && !group.Contains(switchblock)) {
+                if (switchblock != this && switchblock != block && switchblock.activator.Index == activator.Index && (switchblock.CollideRect(new Rectangle((int)block.X - 1, (int)block.Y, (int)block.Width + 2, (int)block.Height)) || switchblock.CollideRect(new Rectangle((int)block.X, (int)block.Y - 1, (int)block.Width, (int)block.Height + 2))) && !group.Contains(switchblock)) {
                     group.Add(switchblock);
                     FindInGroup(switchblock);
                     switchblock.group = group;
@@ -144,7 +141,7 @@ namespace Celeste.Mod.EmHelper.Entities {
 
         private bool CheckForSame(float x, float y) {
             foreach (MonumentSwitchBlock switchblock in Scene.Tracker.GetEntities<MonumentSwitchBlock>()) {
-                if (switchblock.Index == Index && switchblock.Collider.Collide(new Rectangle((int)x, (int)y, 8, 8))) {
+                if (switchblock.activator.Index == activator.Index && switchblock.Collider.Collide(new Rectangle((int)x, (int)y, 8, 8))) {
                     return true;
                 }
             }
@@ -165,7 +162,7 @@ namespace Celeste.Mod.EmHelper.Entities {
             Vector2 vector = groupOrigin - Position;
             image.Origin = vector - value;
             image.Position = vector;
-            image.Color = Index;
+            image.Color = activator.Index;
             Add(image);
             all.Add(image);
             return image;
@@ -173,7 +170,7 @@ namespace Celeste.Mod.EmHelper.Entities {
 
         public override void Update() {
             base.Update();
-            if (Activated && !Collidable) {
+            if (activator.Activated && !Collidable) {
                 bool flag = false;
                 if (BlockedCheck()) {
                     flag = true;
@@ -187,7 +184,7 @@ namespace Celeste.Mod.EmHelper.Entities {
                         wiggler.Start();
                     }
                 }
-            } else if (!Activated && Collidable) {
+            } else if (!activator.Activated && Collidable) {
                 Collidable = false;
                 ShiftSize(1);
                 DisableStaticMovers();
@@ -279,10 +276,6 @@ namespace Celeste.Mod.EmHelper.Entities {
             Collidable = collidable;
             return false;
         }
-
-        public Color Index;
-
-        public bool Activated;
 
         private int blockHeight;
 

@@ -9,21 +9,19 @@ namespace Celeste.Mod.EmHelper.Entities {
     [CustomEntity("EmHelper/Monumentpressureplate")]
     public class MonumentPressurePlate : Entity {
         public MonumentPressurePlate(EntityData data, Vector2 levelOffset)
-            : this(data.Position + levelOffset, data.Int("pattern", 0), data.Bool("onetime", false), data.HexColor("color", Calc.HexToColor("82d9ff")), data.Bool("mute", false), data.Bool("isButton", false), data.Bool("disable", false)) {
+            : this(data.Position + levelOffset, data.Int("pattern", 0), data.Bool("onetime", false), data.HexColor("color", Calc.HexToColor("82d9ff")), data.Bool("mute", false), data.Bool("isButton", false), !data.Bool("disable", false)) {
         }
 
-        public MonumentPressurePlate(Vector2 position, int pattern, bool onetime, Color color, bool mute, bool isButton, bool ButtonDisable)
+        public MonumentPressurePlate(Vector2 position, int pattern, bool oneUse, Color color, bool mute, bool isButton, bool active)
             : base(position) {
-            IsButton = isButton;
-            this.ButtonDisable = ButtonDisable;
+            this.isButton = isButton;
             this.mute = mute;
             Depth = -59;
-            this.onetime = onetime;
+            this.oneUse = oneUse;
             this.pattern = pattern;
             pressed = new List<Image>();
             solid = new List<Image>();
             all = new List<Image>();
-            Index = color;
             Collider = new Hitbox(14f, 3f, -7f, -3f);
 
             staticMover = new StaticMover {
@@ -34,119 +32,94 @@ namespace Celeste.Mod.EmHelper.Entities {
             Add(staticMover);
             staticMover.OnEnable = new Action(OnStaticMoverEnable);
             staticMover.OnDisable = new Action(OnStaticMoverDisable);
+            
+            activator = new MonumentActivator(color, active, OnToggle);
+            if (isButton) {
+                Add(activator);
+            }
+        }
 
-            monumentactivator = new MonumentActivator();
-            Add(monumentactivator);
+        private void OnToggle(bool activated) {
+            UpdateVisuals(activated); 
+        }
+
+        private void UpdateVisuals(bool activated) {
+            bool enabled = activated && !forceDisabled;
+            foreach (Image image in solid) {
+                image.Color = enabled ? activator.Index : disabledColor;
+                image.Visible = enabled;
+            }
+
+            foreach (Image image in solid) {
+                image.Visible = enabled;
+            }
+
+            foreach (Image image in pressed) {
+                image.Visible = !enabled;
+            }
         }
 
         private void OnStaticMoverEnable() {
-            CassetteDisable = false;
-            if (ButtonDisable) {
-                OnDisable();
-            } else {
-                OnEnable();
-            }
+            Collidable = true;
+            forceDisabled = false;
+            UpdateVisuals(activator.Activated);
         }
 
         private void OnStaticMoverDisable() {
-            CassetteDisable = true;
-            OnDisable();
-        }
-
-        public void OnEnable() {
-            foreach (Image image in solid)
-            {
-                image.Color = Index;
-            }
-
-            Collidable = true;
-            pressureactivated = false;
-            prevstate = pressureactivated;
-            UpdateVisualState();
-        }
-
-        public void OnDisable() {
-            foreach (Image image in solid)
-            {
-                image.Color = disabledcolor;
-            }
-
             Collidable = false;
-            if (ButtonDisable) {
-                UpdateVisualState(true);
-            } else {
-                UpdateVisualState();
-            }
-        }
-
-        private void Trigger() {
-            if (onetime) {
-                turnoff = true;
-            } //onetime button
-
-            prevstate = pressureactivated;
-            if (pressureactivated && !mute) {
-                Audio.Play("event:/game/general/cassette_block_switch_1");
-            } else if (!mute) {
-                Audio.Play("event:/game/general/cassette_block_switch_2");
-            }
-
-            UpdateVisualState();
-            monumentactivator.Activated(Index);
+            forceDisabled = true;
+            UpdateVisuals(false);
         }
 
         public override void Awake(Scene scene) {
             base.Awake(scene);
             Color color = Calc.HexToColor("667da5");
-            disabledcolor = new Color(color.R / 255f * (Index.R / 255f), color.G / 255f * (Index.G / 255f), color.B / 255f * (Index.B / 255f), 1f);
+            disabledColor = new Color(color.R / 255f * (activator.Index.R / 255f), color.G / 255f * (activator.Index.G / 255f), color.B / 255f * (activator.Index.B / 255f), 1f);
             SetImage();
-            foreach (Image image in solid)
-            {
-                image.Color = Index;
-            }
-
-            foreach (Image image2 in pressed)
-            {
-                image2.Color = disabledcolor;
-            }
-
-            if (ButtonDisable) {
-                UpdateVisualState(true);
-            } else {
-                UpdateVisualState();
-            }
+            UpdateVisuals(activator.Activated);
         }
 
         public override void Update() {
             base.Update();
-            if (turnoff || CassetteDisable || ButtonDisable) {
+            if (turnOff || forceDisabled || !activator.Activated) {
                 return;
             }
 
-            List<Entity> actors = Scene.Tracker.GetEntities<Actor>();
-            pressureactivated = false;
-            foreach (Entity actor in actors) {
-                bool flag = Collide.Check(actor, this);
-                if (flag) {
-                    pressureactivated = true;
-                    break;
+            bool pressed = CollideCheck<Actor>();
+            if (isButton && pressed) {
+                ChangePress(true);
+            } else if (wasPressed != pressed) {
+                wasPressed = pressed;
+                ChangePress(pressed);
+                UpdateVisuals(!pressed);
+            }
+        }
+
+        private void ChangePress(bool pressed) {
+            if (oneUse) {
+                turnOff = true;
+            }
+
+            if (!mute) {
+                if (pressed) {
+                    Audio.Play("event:/game/general/cassette_block_switch_1");
+                } else {
+                    Audio.Play("event:/game/general/cassette_block_switch_2");
                 }
             }
 
-            if (prevstate != pressureactivated) {
-                Trigger();
-            }
+            this.ToggleMonumentActivators(activator.Index);
         }
 
         private void SetImage() {
-            pressed.Add(CreateImage(GFX.Game["objects/monumentpressureplate/pressed"]));
+            pressed.Add(CreateImage(GFX.Game["objects/monumentpressureplate/pressed"], activator.Index));
             List<MTexture> atlasSubtextures = GFX.Game.GetAtlasSubtextures("objects/monumentpressureplate/solid");
-            solid.Add(CreateImage(atlasSubtextures[pattern % atlasSubtextures.Count]));
+            solid.Add(CreateImage(atlasSubtextures[pattern % atlasSubtextures.Count], disabledColor));
         }
 
-        private Image CreateImage(MTexture tex) {
+        private Image CreateImage(MTexture tex, Color color) {
             Image image = new(tex) {
-                Color = Index
+                Color = color
             };
             image.Origin.X = image.Width / 2f;
             image.Origin.Y = image.Height - 1;
@@ -155,52 +128,19 @@ namespace Celeste.Mod.EmHelper.Entities {
             return image;
         }
 
-        // Used for pressure plates
-        private void UpdateVisualState() {
-            foreach (Image image in solid) {
-                image.Visible = !turnoff && !pressureactivated;
-            }
-
-            foreach (Image image2 in pressed) {
-                image2.Visible = turnoff || pressureactivated;
-            }
-        }
-
-        // Used for buttons
-        private void UpdateVisualState(bool showpressed) {
-            foreach (Image image in solid) {
-                image.Visible = !showpressed;
-            }
-
-            foreach (Image image2 in pressed) {
-                image2.Visible = showpressed;
-            }
-        }
-
-        public void SetColor(Color color) {
-            foreach (Component component in Components) {
-                if (component is Image image) {
-                    image.Color = color;
-                }
-            }
-        }
-
-        public bool ButtonDisable = false; // useful if it's a button
-        public bool IsButton = false;
-        public bool CassetteDisable = false;
-        private bool turnoff = false;
-        private readonly bool mute = false;
+        private bool wasPressed;
+        private readonly bool isButton;
+        private bool forceDisabled;
+        private bool turnOff;
+        private readonly bool mute;
         private readonly int pattern;
-        private readonly bool onetime = false;
-        private bool pressureactivated = false; //pressure plate only
-        private bool prevstate = false; //pressure plate stuff
-        public Color Index;
-        private Color disabledcolor;
+        private readonly bool oneUse;
+        private Color disabledColor;
         private readonly List<Image> pressed;
         private readonly List<Image> solid;
         private readonly List<Image> all;
         private readonly StaticMover staticMover;
 
-        private readonly MonumentActivator monumentactivator;
+        private readonly MonumentActivator activator;
     }
 }

@@ -7,6 +7,8 @@ namespace Celeste.Mod.EmHelper.Entities {
     [Tracked]
     [CustomEntity("EmHelper/Monumentbooster")]
     public class MonumentBooster : Actor {
+        private readonly MonumentActivator activator;
+
         public MonumentBooster(EntityData data, Vector2 levelOffset)
             : this(data.Position + levelOffset, data.Int("pattern", 0), data.Bool("red", false), data.HexColor("color", Calc.HexToColor("82d9ff")), data.Bool("active", true)) {
         }
@@ -16,18 +18,18 @@ namespace Celeste.Mod.EmHelper.Entities {
             monumentOutline = new List<Image>();
             this.red = red;
             this.pattern = pattern;
-            Index = color;
-            Activated = active;
+
+            Add(activator = new MonumentActivator(color, active, (activated) => OnToggle(activated)));
         }
 
         public override void Awake(Scene scene) {
             SetImage();
             foreach (Image image in monumentOutline)
             {
-                image.Color = Index;
+                image.Color = activator.Index;
             }
 
-            Activate(Activated);
+            OnToggle(activator.Activated);
         }
 
         private void SetImage() {
@@ -37,7 +39,7 @@ namespace Celeste.Mod.EmHelper.Entities {
 
         private Image CreateImage(MTexture tex) {
             Image image = new(tex) {
-                Color = Index
+                Color = activator.Index
             };
             image.Origin.X = image.Width / 2f;
             image.Origin.Y = image.Height / 2f;
@@ -53,7 +55,7 @@ namespace Celeste.Mod.EmHelper.Entities {
 
         }
 
-        public void Activate(bool flag) {
+        public void OnToggle(bool flag) {
             if (!bubble.BoostingPlayer) {
                 bubble.Collidable = flag;
                 bubble.Visible = flag;
@@ -70,7 +72,7 @@ namespace Celeste.Mod.EmHelper.Entities {
         public override void Update() {
             base.Update();
             if (activationQueue && !bubble.BoostingPlayer) {
-                Activate(queueflag); //activates it later
+                OnToggle(queueflag); //activates it later
                 activationQueue = false;
                 queueflag = false;
             }
@@ -78,11 +80,9 @@ namespace Celeste.Mod.EmHelper.Entities {
 
         private bool activationQueue = false;
         private bool queueflag = false;
-        public Color Index;
         private Booster bubble;
         private readonly int pattern = 0;
         private readonly bool red = false;
-        public bool Activated;
         private readonly List<Image> monumentOutline;
     }
 }

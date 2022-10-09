@@ -11,8 +11,6 @@ namespace Celeste.Mod.EmHelper.Entities {
             : base(position) {
             this.pattern = pattern;
             this.mute = mute;
-            Index = color;
-            Enable = false;
             this.onlyEnable = onlyEnable;
             this.onlyDisable = onlyDisable;
             Collider = new Hitbox(16f, 24f, -8f, -12f);
@@ -22,8 +20,8 @@ namespace Celeste.Mod.EmHelper.Entities {
             Add(sprite = GFX.SpriteBank.Create(spritepath));
             Depth = 2000;
 
-            monumentActivator = new MonumentActivator();
-            Add(monumentActivator);
+            activator = new MonumentActivator(color, false, (activated) => SetSprite(true));
+            Add(activator);
         }
 
         public MonumentFlipSwitch(EntityData data, Vector2 offset)
@@ -32,29 +30,29 @@ namespace Celeste.Mod.EmHelper.Entities {
 
         public override void Added(Scene scene) {
             base.Added(scene);
-            sprite.Color = Index;
+            sprite.Color = activator.Index;
             SetSprite(false);
         }
 
         public void SetSprite(bool animate) {
             if (animate) {
                 if (playSounds && !mute) {
-                    Audio.Play(Enable ? "event:/game/09_core/switch_to_cold" : "event:/game/09_core/switch_to_hot", Position);
+                    Audio.Play(activator.Activated ? "event:/game/09_core/switch_to_cold" : "event:/game/09_core/switch_to_hot", Position);
                 }
 
                 if (Usable) {
-                    sprite.Play(Enable ? "ice" : "hot", false, false);
+                    sprite.Play(activator.Activated ? "ice" : "hot", false, false);
                 } else {
                     if (playSounds && !mute) {
                         Audio.Play("event:/game/09_core/switch_dies", Position);
                     }
 
-                    sprite.Play(Enable ? "iceOff" : "hotOff", false, false);
+                    sprite.Play(activator.Activated ? "iceOff" : "hotOff", false, false);
                 }
             } else if (Usable) {
-                sprite.Play(Enable ? "iceLoop" : "hotLoop", false, false);
+                sprite.Play(activator.Activated ? "iceLoop" : "hotLoop", false, false);
             } else {
-                sprite.Play(Enable ? "iceOffLoop" : "hotOffLoop", false, false);
+                sprite.Play(activator.Activated ? "iceOffLoop" : "hotOffLoop", false, false);
             }
 
             playSounds = false;
@@ -64,7 +62,7 @@ namespace Celeste.Mod.EmHelper.Entities {
         {
             if (Usable && cooldownTimer <= 0f) {
                 playSounds = true;
-                monumentActivator.Activated(Index);
+                this.ToggleMonumentActivators(activator.Index);
                 Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
                 cooldownTimer = 1f;
             }
@@ -73,7 +71,7 @@ namespace Celeste.Mod.EmHelper.Entities {
         private void OnHoldable(Holdable holdable) {
             if (Usable && cooldownTimer <= 0f) {
                 playSounds = true;
-                monumentActivator.Activated(Index);
+                this.ToggleMonumentActivators(activator.Index);
                 Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
                 cooldownTimer = 1f;
             }
@@ -86,7 +84,7 @@ namespace Celeste.Mod.EmHelper.Entities {
             }
         }
 
-        private bool Usable => (!onlyEnable || Enable) && (!onlyDisable || !Enable);
+        private bool Usable => (!onlyEnable || activator.Activated) && (!onlyDisable || !activator.Activated);
 
 
         private float cooldownTimer;
@@ -99,14 +97,10 @@ namespace Celeste.Mod.EmHelper.Entities {
 
         private bool playSounds;
 
-        public Color Index;
-
-        public bool Enable;
-
         private readonly Sprite sprite;
 
         private readonly int pattern;
 
-        private readonly MonumentActivator monumentActivator;
+        private readonly MonumentActivator activator;
     }
 }

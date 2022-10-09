@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Celeste.Mod.EmHelper.Entities;
+using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
@@ -35,7 +36,7 @@ namespace Celeste.Mod.EmHelper.Module {
 
         private bool CheckWalkelinesInsideTrigger(Player player, Trigger trigger) {
             if (trigger != null) { //never too sure
-                foreach (Entities.Walkeline walkeline in player.Scene.Tracker.GetEntities<Entities.Walkeline>()) { //i could swap the player with the trigger, but im not sure that will work
+                foreach (Walkeline walkeline in player.Scene.Tracker.GetEntities<Walkeline>()) { //i could swap the player with the trigger, but im not sure that will work
                     if (walkeline != null && trigger.CollideCheck(walkeline) && walkeline.TriggerHappy) { //triggerhappy is just a flag in the walke's code to check if it should collide with triggers
                         return true; //there's at least a walkeline inside the trigger
                     }
@@ -53,7 +54,7 @@ namespace Celeste.Mod.EmHelper.Module {
 
         private static readonly MethodInfo TryActorWiggleUp = typeof(CassetteBlock).GetMethod("TryActorWiggleUp", BindingFlags.Instance | BindingFlags.NonPublic);
         private bool Walkeline_BlockedCheck(On.Celeste.CassetteBlock.orig_BlockedCheck orig, CassetteBlock self) {
-            Entities.Walkeline walkeline = self.CollideFirst<Entities.Walkeline>();
+            Walkeline walkeline = self.CollideFirst<Walkeline>();
             return (walkeline != null && !(bool)TryActorWiggleUp.Invoke(self, new object[] { walkeline })) || orig(self);
         }
 

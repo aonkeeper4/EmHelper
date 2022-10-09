@@ -9,10 +9,10 @@ namespace Celeste.Mod.EmHelper.Entities {
     [Tracked]
     [CustomEntity("EmHelper/Monumentswapblock")]
     public class MonumentSwapBlock : Solid {
+        private readonly MonumentActivator activator;
         public MonumentSwapBlock(Vector2 position, float width, float height, Vector2 node, int pattern, Color color, bool mute)
             : base(position, width, height, false) {
             this.mute = mute;
-            Index = color;
             this.pattern = pattern;
             start = Position;
             end = node;
@@ -43,6 +43,9 @@ namespace Celeste.Mod.EmHelper.Entities {
             Add(new LightOcclude(0.2f));
             Depth = -9999;
             SurfaceSoundIndex = 35;
+
+            activator = new MonumentActivator(color, false, (activated) => Swap());
+            Add(activator);
         }
 
         public MonumentSwapBlock(EntityData data, Vector2 offset)
@@ -64,7 +67,7 @@ namespace Celeste.Mod.EmHelper.Entities {
             Audio.Stop(moveSfx, true);
         }
 
-        public void Activated() {
+        public void Swap() {
             swapping = true;
             target = 1 - target;
             float relativeLerp = target == 1 ? lerp : 1 - lerp;
@@ -168,12 +171,12 @@ namespace Celeste.Mod.EmHelper.Entities {
                 float num2 = 16f * num;
                 int num3 = 2;
                 while (num3 < num2) {
-                    DrawBlockStyle(vector + (value * num3), Width, Height, nineSliceGreen, Index * (1f - (num3 / num2)));
+                    DrawBlockStyle(vector + (value * num3), Width, Height, nineSliceGreen, activator.Index * (1f - (num3 / num2)));
                     num3 += 2;
                 }
             }
 
-            DrawBlockStyle(vector, Width, Height, nineSliceGreen, Index);
+            DrawBlockStyle(vector, Width, Height, nineSliceGreen, activator.Index);
         }
 
         private void DrawBlockStyle(Vector2 pos, float width, float height, MTexture[,] ninSlice, Color color) {
@@ -199,8 +202,6 @@ namespace Celeste.Mod.EmHelper.Entities {
                 }
             }
         }
-
-        public Color Index;
 
         private readonly bool mute = false;
 
@@ -247,7 +248,7 @@ namespace Celeste.Mod.EmHelper.Entities {
 
             public override void Render() {
                 float alpha = 0.5f * (0.5f + (((float)Math.Sin(timer) + 1f) * 0.25f));
-                block.DrawBlockStyle(new Vector2(block.moveRect.X, block.moveRect.Y), block.moveRect.Width, block.moveRect.Height, block.nineSliceTarget, block.Index * alpha);
+                block.DrawBlockStyle(new Vector2(block.moveRect.X, block.moveRect.Y), block.moveRect.Width, block.moveRect.Height, block.nineSliceTarget, block.activator.Index * alpha);
             }
 
             private readonly MonumentSwapBlock block;

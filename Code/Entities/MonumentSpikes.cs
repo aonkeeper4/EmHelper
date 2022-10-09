@@ -14,6 +14,9 @@ namespace Celeste.Mod.EmHelper.Entities {
         "EmHelper/MonumentspikesRight = LoadRight"
     })]
     public class MonumentSpikes : Entity {
+        private readonly MonumentActivator activator;
+        private bool forceDisabled;
+
         public static Entity LoadUp(Level level, LevelData levelData, Vector2 offset, EntityData entityData) {
             entityData.Values["type"] = entityData.Attr("type", "default");
             return new MonumentSpikes(entityData, offset, Directions.Up);
@@ -36,10 +39,8 @@ namespace Celeste.Mod.EmHelper.Entities {
 
         public MonumentSpikes(Vector2 position, int size, Directions direction, string type, Color color, bool active)
             : base(position) {
-            MonumentEnable = active;
-            EnabledColor = color;
             Color disablecolor = Calc.HexToColor("667da5");
-            disabledColor = new Color(disablecolor.R / 255f * (EnabledColor.R / 255f), disablecolor.G / 255f * (EnabledColor.G / 255f), disablecolor.B / 255f * (EnabledColor.B / 255f), 1f);
+            disabledColor = new Color(disablecolor.R / 255f * (color.R / 255f), disablecolor.G / 255f * (color.G / 255f), disablecolor.B / 255f * (color.B / 255f), 1f);
             Depth = -1;
             this.direction = direction;
             this.size = size;
@@ -71,6 +72,8 @@ namespace Celeste.Mod.EmHelper.Entities {
                 OnDisable = new Action(OnStaticMoverDisable)
             });
 
+            activator = new MonumentActivator(color, active, OnToggle);
+            Add(activator);
         }
 
         public MonumentSpikes(EntityData data, Vector2 offset, Directions dir)
@@ -130,11 +133,7 @@ namespace Celeste.Mod.EmHelper.Entities {
                 }
             }
 
-            if (MonumentEnable) {
-                OnEnable();
-            } else {
-                OnDisable();
-            }
+            OnToggle(activator.Activated);
         }
 
         private void AddTentacle(float i) {
@@ -169,26 +168,20 @@ namespace Celeste.Mod.EmHelper.Entities {
             Add(sprite);
         }
 
-        public void OnStaticMoverEnable() {
-            staticmoverenable = true;
-            OnEnable();
+        public void OnToggle(bool activated) {
+            bool enabled = activated && !forceDisabled;
+            Active = Collidable = enabled;
+            SetSpikeColor(enabled ? activator.Index : disabledColor);
         }
 
-        public void OnEnable() {
-            if (staticmoverenable && MonumentEnable) {
-                Active = Visible = Collidable = true;
-                SetSpikeColor(EnabledColor);
-            }
+        public void OnStaticMoverEnable() {
+            forceDisabled = false;
+            OnToggle(activator.Activated);
         }
 
         public void OnStaticMoverDisable() {
-            staticmoverenable = false;
-            OnDisable();
-        }
-
-        public void OnDisable() {
-            Active = Collidable = false;
-            SetSpikeColor(disabledColor);
+            forceDisabled = true;
+            OnToggle(false);
         }
 
         private void OnShake(Vector2 amount) {
@@ -270,14 +263,9 @@ namespace Celeste.Mod.EmHelper.Entities {
 
         private readonly int size;
 
-        public bool MonumentEnable = false;
-        private bool staticmoverenable = true;
-
         private readonly string overrideType;
 
         private string spikeType;
-
-        public Color EnabledColor;
 
         private Color disabledColor;
 
