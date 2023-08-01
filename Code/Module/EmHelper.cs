@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using MonoMod.ModInterop;
 using MonoMod.RuntimeDetour;
 using System;
 using System.Reflection;
@@ -20,6 +21,8 @@ namespace Celeste.Mod.EmHelper.Module {
             On.Celeste.LevelLoader.ctor += LevelLoader_ctor;
             On.Celeste.CassetteBlock.BlockedCheck += Walkeline_BlockedCheck;
             PlayerOrig_updateHook = new ILHook(typeof(Player).GetMethod("orig_Update"), Walkeline_triggerupdate); //i want to swallow burning coals, used to let walkelines interact with triggers, have no idea how it works anymore
+
+            typeof(GravityHelperImports).ModInterop();
         }
 
         private void Walkeline_triggerupdate(ILContext il) {

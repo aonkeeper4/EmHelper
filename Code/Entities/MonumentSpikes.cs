@@ -1,4 +1,5 @@
-﻿using Celeste.Mod.Entities;
+﻿using Celeste.Mod.EmHelper.Module;
+using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
@@ -48,10 +49,11 @@ namespace Celeste.Mod.EmHelper.Entities {
             switch (direction) {
                 case Directions.Up:
                     Collider = new Hitbox(size, 3f, 0f, -3f);
-                    Add(new LedgeBlocker(null));
+                    Add(new LedgeBlocker(_ => CheckGravity(false)));
                     break;
                 case Directions.Down:
                     Collider = new Hitbox(size, 3f, 0f, 0f);
+                    Add(new LedgeBlocker(_ => CheckGravity(true)));
                     break;
                 case Directions.Left:
                     Collider = new Hitbox(3f, size, -3f, 0f);
@@ -75,6 +77,8 @@ namespace Celeste.Mod.EmHelper.Entities {
             activator = new MonumentActivator(color, active, OnToggle);
             Add(activator);
         }
+
+        private static bool CheckGravity(bool inverted) => GravityHelperImports.IsPlayerInverted != null && GravityHelperImports.IsPlayerInverted() == inverted;
 
         public MonumentSpikes(EntityData data, Vector2 offset, Directions dir)
             : this(data.Position + offset, GetSize(data, dir), dir, data.Attr("type", "default"), data.HexColor("color", Calc.HexToColor("82d9ff")), data.Bool("active", true)) {
@@ -206,16 +210,20 @@ namespace Celeste.Mod.EmHelper.Entities {
         }
 
         private void OnCollide(Player player) {
+            var inverted = GravityHelperImports.IsPlayerInverted?.Invoke() ?? false;
+
             switch (direction) {
                 case Directions.Up:
-                    if (player.Speed.Y >= 0f && player.Bottom <= Bottom) {
+                    if (!inverted && player.Speed.Y >= 0f && player.Bottom <= Bottom ||
+                        inverted && player.Speed.Y <= 0f) {
                         player.Die(new Vector2(0f, -1f), false, true);
                         return;
                     }
 
                     break;
                 case Directions.Down:
-                    if (player.Speed.Y <= 0f) {
+                    if (!inverted && player.Speed.Y <= 0f ||
+                        inverted && player.Speed.Y >= 0f && player.Top >= Top) {
                         player.Die(new Vector2(0f, 1f), false, true);
                         return;
                     }
