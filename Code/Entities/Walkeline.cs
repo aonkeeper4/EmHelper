@@ -114,6 +114,11 @@ namespace Celeste.Mod.EmHelper.Entities {
             };
         }
 
+        public override void Awake(Scene scene) {
+            base.Awake(scene);
+            Module.EmHelper.Instance.LevelHasTriggerHappyWalkeline |= TriggerHappy;
+        }
+
         private void OnPlayer(Player player) {
             if (!dead && !inPipe) {
                 if (bouncy) {
