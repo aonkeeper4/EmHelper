@@ -12,6 +12,7 @@ namespace Celeste.Mod.EmHelper.Module {
     public class EmHelper : EverestModule {
         public static EmHelper Instance;
         private ILHook PlayerOrig_updateHook; //IL hook, used to modify the player's code so walkelines can interact with triggers
+        public bool LevelHasTriggerHappyWalkeline = false;
 
         public EmHelper() {
             Instance = this;
@@ -20,9 +21,17 @@ namespace Celeste.Mod.EmHelper.Module {
         public override void Load() {
             On.Celeste.LevelLoader.ctor += LevelLoader_ctor;
             On.Celeste.CassetteBlock.BlockedCheck += Walkeline_BlockedCheck;
+            On.Celeste.Level.LoadLevel += Level_LoadLevel;
             PlayerOrig_updateHook = new ILHook(typeof(Player).GetMethod("orig_Update"), Walkeline_triggerupdate); //i want to swallow burning coals, used to let walkelines interact with triggers, have no idea how it works anymore
 
             typeof(GravityHelperImports).ModInterop();
+        }
+
+        // Resets walkeline trigger check whenever we change levels. Set to "true" in Walkeline.Awake() if trigger-enabled
+        // We can't just check the tracker for Walkelines here since it can contain Walkelines from the previous screen
+        private void Level_LoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
+            LevelHasTriggerHappyWalkeline = false;
+            orig(self, playerIntro, isFromLoader);
         }
 
         private void Walkeline_triggerupdate(ILContext il) {
@@ -32,7 +41,7 @@ namespace Celeste.Mod.EmHelper.Module {
                 cursor.Emit(OpCodes.Ldarg_0); //adds the player to the stack, thanks max!
                 cursor.Emit(OpCodes.Ldloc_S, il.Body.Variables[10]); //adds the trigger to the stack, thanks again max!
                 cursor.EmitDelegate<Func<bool, Player, Trigger, bool>>((collided, player, trigger) => {
-                    return collided || CheckWalkelinesInsideTrigger(player, trigger);
+                    return collided || (LevelHasTriggerHappyWalkeline && CheckWalkelinesInsideTrigger(player, trigger));
                 });
             }
         }
@@ -64,6 +73,7 @@ namespace Celeste.Mod.EmHelper.Module {
         public override void Unload() {
             On.Celeste.LevelLoader.ctor -= LevelLoader_ctor;
             On.Celeste.CassetteBlock.BlockedCheck -= Walkeline_BlockedCheck;
+            On.Celeste.Level.LoadLevel -= Level_LoadLevel;
             PlayerOrig_updateHook?.Dispose();
             PlayerOrig_updateHook = null;
         }
