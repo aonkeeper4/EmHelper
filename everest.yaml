@@ -1,5 +1,5 @@
 - Name: EmHelper
-  Version: 1.2.1
+  Version: 1.2.2
   DLL: Code/bin/EmHelper.dll
   Dependencies:
     - Name: Everest
